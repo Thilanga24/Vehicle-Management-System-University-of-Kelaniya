@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faEnvelope,
@@ -7,12 +8,12 @@ import {
     faEyeSlash,
     faInfoCircle,
     faTimes,
-    faSpinner,
-    faBuildingColumns
+    faSpinner
 } from '@fortawesome/free-solid-svg-icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const App = () => {
+    const navigate = useNavigate();
     // --- States ---
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -76,17 +77,9 @@ const App = () => {
     };
 
     const redirectToDashboard = (role) => {
-        const dashboardRoutes = {
-            'staff': 'lecturer-dashboard-new.html',
-            'hod': 'hod-dashboard.html',
-            'dean': 'dean-dashboard.html',
-            'sar': 'sar-dashboard.html',
-            'registrar': 'registrar-dashboard.html',
-            'admin': 'admin-dashboard.html'
-        };
-        const dashboardUrl = dashboardRoutes[role];
-        if (dashboardUrl) {
-            window.location.href = dashboardUrl;
+        // For this demo, all roles go to the main dashboard
+        if (role) {
+            navigate('/dashboard');
         } else {
             alert('Invalid role selected');
         }
@@ -209,12 +202,15 @@ const App = () => {
             <div className="w-full max-w-md">
                 {/* Logo and Title */}
                 <div className="text-center mb-8">
-                    <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center shadow-lg">
-                        <FontAwesomeIcon icon={faBuildingColumns} className="text-3xl text-white" />
+                    <div className="w-24 h-24 mx-auto mb-4 relative">
+                        <img
+                            src="/assets/uok_logo.png"
+                            alt="University of Kelaniya Logo"
+                            className="w-full h-full object-contain drop-shadow-2xl"
+                        />
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-2">UoK VMS</h1>
-                    <p className="text-gray-300">University of Kelaniya</p>
-                    <p className="text-gray-400 text-sm">Vehicle Management System</p>
+                    <h1 className="text-3xl font-bold text-white mb-2">Vehicle Management System</h1>
+                    <p className="text-gray-300 text-lg">University of Kelaniya</p>
                 </div>
 
                 {/* Login Form */}
@@ -372,15 +368,15 @@ const App = () => {
 
                     {/* Sign Up Link */}
                     <div className="mt-6 text-center">
-                        <a href="signup.html" className="font-medium text-blue-400 hover:text-blue-300 transition duration-200">
+                        <Link to="/signup.html" className="font-medium text-uok-yellow hover:text-yellow-300 transition duration-200">
                             Create an account
-                        </a>
+                        </Link>
                     </div>
                 </div>
 
                 {/* Footer */}
                 <div className="text-center mt-8">
-                    <p className="text-indigo-100 text-sm">
+                    <p className="text-red-200/60 text-sm">
                         © 2025 University of Kelaniya. All rights reserved.
                     </p>
                 </div>
@@ -422,8 +418,8 @@ const App = () => {
 
                             {fpAlert.show && (
                                 <div className={`mt-4 rounded-lg border px-4 py-3 text-sm ${fpAlert.type === 'success' ? 'border-emerald-400/40 bg-emerald-900/25 text-emerald-100' :
-                                        fpAlert.type === 'warning' ? 'border-amber-400/40 bg-amber-900/25 text-amber-100' :
-                                            'border-red-400/40 bg-red-900/25 text-red-100'
+                                    fpAlert.type === 'warning' ? 'border-amber-400/40 bg-amber-900/25 text-amber-100' :
+                                        'border-red-400/40 bg-red-900/25 text-red-100'
                                     }`}>
                                     {fpAlert.message}
                                 </div>
