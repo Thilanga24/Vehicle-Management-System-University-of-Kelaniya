@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-bg: #0f172a;
+  --secondary-bg: #1e293b;
+  --card-bg: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --accent-blue: #3b82f6;
+  --accent-indigo: #6366f1;
+}
+
+body {
+  margin: 0;
+  background: var(--primary-bg);
+  background-image: 
+      radial-gradient(at 40% 20%, rgb(120, 119, 198) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, rgb(255, 119, 198) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, rgb(255, 0, 128) 0px, transparent 50%);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+.login-card {
+  background: linear-gradient(135deg, var(--secondary-bg) 0%, var(--card-bg) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+}
+
+.card-shadow {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.btn-primary {
+  background: var(--accent-blue);
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+}
+
+.input-field {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.input-field:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.input-field::placeholder {
+  color: var(--text-secondary);
+}
