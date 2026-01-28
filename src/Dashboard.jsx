@@ -70,6 +70,10 @@ const Dashboard = () => {
                         <i className="fas fa-chart-line"></i>
                         <span>Dashboard</span>
                     </div>
+                    <div className="menu-item" onClick={() => navigate('/reservation')}>
+                        <i className="fas fa-calendar-plus"></i>
+                        <span>New Booking</span>
+                    </div>
                     <div className={`menu-item ${activeTab === 'reservations-tab' ? 'active' : ''}`} onClick={() => setActiveTab('reservations-tab')}>
                         <i className="fas fa-calendar-check"></i>
                         <span>My Reservations</span>
@@ -78,13 +82,25 @@ const Dashboard = () => {
 
                 <div className="menu-section">
                     <div className="menu-section-title">Management</div>
-                    <div className={`menu-item ${activeTab === 'vehicles-tab' ? 'active' : ''}`} onClick={() => setActiveTab('vehicles-tab')}>
+                    <div className="menu-item" onClick={() => navigate('/vehicles')}>
                         <i className="fas fa-car"></i>
                         <span>Vehicles</span>
                     </div>
                     <div className={`menu-item ${activeTab === 'drivers-tab' ? 'active' : ''}`} onClick={() => setActiveTab('drivers-tab')}>
                         <i className="fas fa-user-tie"></i>
                         <span>Drivers</span>
+                    </div>
+                    <div className="menu-item" onClick={() => navigate('/users')}>
+                        <i className="fas fa-users-cog"></i>
+                        <span>User Mgmt</span>
+                    </div>
+                    <div className="menu-item" onClick={() => navigate('/reports')}>
+                        <i className="fas fa-chart-bar"></i>
+                        <span>Reports</span>
+                    </div>
+                    <div className="menu-item" onClick={() => navigate('/sar-dashboard')}>
+                        <i className="fas fa-user-shield"></i>
+                        <span>SAR Portal</span>
                     </div>
                     <div className={`menu-item ${activeTab === 'maintenance-tab' ? 'active' : ''}`} onClick={() => setActiveTab('maintenance-tab')}>
                         <i className="fas fa-tools"></i>
@@ -150,7 +166,7 @@ const Dashboard = () => {
                             <i className="fas fa-th-large"></i>
                             <span>Overview</span>
                         </button>
-                        <button className={`tab-button ${activeTab === 'vehicles-tab' ? 'active' : ''}`} onClick={() => setActiveTab('vehicles-tab')}>
+                        <button className="tab-button" onClick={() => navigate('/vehicles')}>
                             <i className="fas fa-car"></i>
                             <span>Vehicles</span>
                         </button>
