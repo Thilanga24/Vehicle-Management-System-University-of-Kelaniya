@@ -9,6 +9,7 @@ import UserManagement from './UserManagement.jsx'
 import SARDashboard from './SARDashboard.jsx'
 import VehicleReservation from './VehicleReservation.jsx'
 import ReportsAnalytics from './ReportsAnalytics.jsx'
+import RegistrarDashboard from './RegistrarDashboard.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -23,6 +24,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <Route path="/sar-dashboard" element={<SARDashboard />} />
                 <Route path="/reservation" element={<VehicleReservation />} />
                 <Route path="/reports" element={<ReportsAnalytics />} />
+                <Route path="/registrar-dashboard" element={<RegistrarDashboard />} />
             </Routes>
         </BrowserRouter>
     </React.StrictMode>,

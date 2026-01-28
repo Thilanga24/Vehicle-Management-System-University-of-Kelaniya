@@ -102,6 +102,10 @@ const Dashboard = () => {
                         <i className="fas fa-user-shield"></i>
                         <span>SAR Portal</span>
                     </div>
+                    <div className="menu-item" onClick={() => navigate('/registrar-dashboard')}>
+                        <i className="fas fa-user-tie"></i>
+                        <span>Registrar Portal</span>
+                    </div>
                     <div className={`menu-item ${activeTab === 'maintenance-tab' ? 'active' : ''}`} onClick={() => setActiveTab('maintenance-tab')}>
                         <i className="fas fa-tools"></i>
                         <span>Maintenance</span>
