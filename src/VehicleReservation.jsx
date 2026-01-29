@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './Dashboard.css';
 
 const VehicleReservation = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
     const [selectedVehicle, setSelectedVehicle] = useState(null);
@@ -22,6 +23,18 @@ const VehicleReservation = () => {
 
     const [distanceWarning, setDistanceWarning] = useState(false);
     const [capacityWarning, setCapacityWarning] = useState(false);
+
+    useEffect(() => {
+        if (location.state) {
+            if (location.state.selectedVehicle) {
+                setSelectedVehicle(location.state.selectedVehicle);
+                setCurrentStep(2); // Auto-advance to details step
+            }
+            if (location.state.date) {
+                setFormData(prev => ({ ...prev, date: location.state.date }));
+            }
+        }
+    }, [location]);
 
     // Sample Data
     const vehicles = [
@@ -140,8 +153,8 @@ const VehicleReservation = () => {
                                     <div
                                         key={vehicle.id}
                                         className={`rounded-xl p-6 border transition cursor-pointer relative ${selectedVehicle?.id === vehicle.id
-                                                ? 'bg-blue-50 border-blue-500 ring-2 ring-blue-500 ring-opacity-50'
-                                                : 'bg-white border-slate-200 hover:shadow-lg'
+                                            ? 'bg-blue-50 border-blue-500 ring-2 ring-blue-500 ring-opacity-50'
+                                            : 'bg-white border-slate-200 hover:shadow-lg'
                                             } ${vehicle.status !== 'available' ? 'opacity-60 pointer-events-none grayscale' : ''}`}
                                         onClick={() => vehicle.status === 'available' && setSelectedVehicle(vehicle)}
                                     >

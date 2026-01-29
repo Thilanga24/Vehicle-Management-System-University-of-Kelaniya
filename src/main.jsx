@@ -10,6 +10,8 @@ import SARDashboard from './SARDashboard.jsx'
 import VehicleReservation from './VehicleReservation.jsx'
 import ReportsAnalytics from './ReportsAnalytics.jsx'
 import RegistrarDashboard from './RegistrarDashboard.jsx'
+import HODDashboard from './HODDashboard.jsx'
+import DeanDashboard from './DeanDashboard.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -25,6 +27,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <Route path="/reservation" element={<VehicleReservation />} />
                 <Route path="/reports" element={<ReportsAnalytics />} />
                 <Route path="/registrar-dashboard" element={<RegistrarDashboard />} />
+                <Route path="/hod-dashboard" element={<HODDashboard />} />
+                <Route path="/dean-dashboard" element={<DeanDashboard />} />
             </Routes>
         </BrowserRouter>
     </React.StrictMode>,

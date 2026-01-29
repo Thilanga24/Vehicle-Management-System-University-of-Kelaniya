@@ -3,60 +3,22 @@
 @tailwind utilities;
 
 :root {
-  --primary-bg: #0f172a;
-  --secondary-bg: #1e293b;
-  --card-bg: #334155;
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --accent-blue: #3b82f6;
-  --accent-indigo: #6366f1;
+  --primary-bg: #800000;
+  --accent-gold: #F6DD26;
+  --accent-blue: #0ea5e9;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
 }
 
 body {
   margin: 0;
-  background:
-    linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)),
-    url('/assets/background.JPG');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  color: var(--text-primary);
+  background-color: #f8fafc;
+  color: #1e293b;
   min-height: 100vh;
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
-.login-card {
-  background: linear-gradient(135deg, var(--secondary-bg) 0%, var(--card-bg) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-}
-
-.card-shadow {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-}
-
+/* Helper classes */
 .btn-primary {
-  background: var(--accent-blue);
-  transition: all 0.2s ease;
-}
-
-.btn-primary:hover {
-  background: #2563eb;
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
-}
-
-.input-field {
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-}
-
-.input-field:focus {
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.input-field::placeholder {
-  color: var(--text-secondary);
+  @apply bg-maroon hover:bg-red-900 text-white transition-all;
 }

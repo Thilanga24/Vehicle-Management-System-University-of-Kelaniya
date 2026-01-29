@@ -81,48 +81,32 @@ const Dashboard = () => {
                 </div>
 
                 <div className="menu-section">
-                    <div className="menu-section-title">Management</div>
-                    <div className="menu-item" onClick={() => navigate('/vehicles')}>
-                        <i className="fas fa-car"></i>
-                        <span>Vehicles</span>
+                    <div className="menu-section-title">Bookings & Requests</div>
+                    <div className={`menu-item ${activeTab === 'emergency-tab' ? 'active' : ''}`} onClick={() => setActiveTab('emergency-tab')}>
+                        <i className="fas fa-exclamation-triangle text-red-500"></i>
+                        <span>Emergency Request</span>
                     </div>
-                    <div className={`menu-item ${activeTab === 'drivers-tab' ? 'active' : ''}`} onClick={() => setActiveTab('drivers-tab')}>
-                        <i className="fas fa-user-tie"></i>
-                        <span>Drivers</span>
+                    <div className={`menu-item ${activeTab === 'reservations-tab' ? 'active' : ''}`} onClick={() => setActiveTab('reservations-tab')}>
+                        <i className="fas fa-calendar-check"></i>
+                        <span>My Reservations</span>
                     </div>
-                    <div className="menu-item" onClick={() => navigate('/users')}>
-                        <i className="fas fa-users-cog"></i>
-                        <span>User Mgmt</span>
+                    <div className={`menu-item ${activeTab === 'pending-tab' ? 'active' : ''}`} onClick={() => setActiveTab('pending-tab')}>
+                        <i className="fas fa-clock"></i>
+                        <span>Pending Approvals</span>
                     </div>
-                    <div className="menu-item" onClick={() => navigate('/reports')}>
-                        <i className="fas fa-chart-bar"></i>
-                        <span>Reports</span>
+                    <div className={`menu-item ${activeTab === 'past-bookings-tab' ? 'active' : ''}`} onClick={() => setActiveTab('past-bookings-tab')}>
+                        <i className="fas fa-history"></i>
+                        <span>Past Bookings</span>
                     </div>
-                    <div className="menu-item" onClick={() => navigate('/sar-dashboard')}>
-                        <i className="fas fa-user-shield"></i>
-                        <span>SAR Portal</span>
-                    </div>
-                    <div className="menu-item" onClick={() => navigate('/registrar-dashboard')}>
-                        <i className="fas fa-user-tie"></i>
-                        <span>Registrar Portal</span>
-                    </div>
-                    <div className={`menu-item ${activeTab === 'maintenance-tab' ? 'active' : ''}`} onClick={() => setActiveTab('maintenance-tab')}>
-                        <i className="fas fa-tools"></i>
-                        <span>Maintenance</span>
-                    </div>
-                </div>
-
-                <div className="menu-section">
-                    <div className="menu-section-title">Analytics</div>
-                    <div className={`menu-item ${activeTab === 'reports-tab' ? 'active' : ''}`} onClick={() => setActiveTab('reports-tab')}>
-                        <i className="fas fa-chart-bar"></i>
-                        <span>Reports</span>
+                    <div className={`menu-item ${activeTab === 'availability-tab' ? 'active' : ''}`} onClick={() => setActiveTab('availability-tab')}>
+                        <i className="fas fa-car-side"></i>
+                        <span>Vehicle Availability</span>
                     </div>
                 </div>
 
                 <div className="menu-section">
                     <div className="menu-section-title">System</div>
-                    <div className="menu-item">
+                    <div className={`menu-item ${activeTab === 'settings-tab' ? 'active' : ''}`} onClick={() => setActiveTab('settings-tab')}>
                         <i className="fas fa-cog"></i>
                         <span>Settings</span>
                     </div>
@@ -165,24 +149,7 @@ const Dashboard = () => {
                 {/* Content Area */}
                 <div className="content-area">
                     {/* Section Tabs (Visual Only for Overview context usually, but here they act as sub-nav or main nav switcher) */}
-                    <div className="section-tabs">
-                        <button className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
-                            <i className="fas fa-th-large"></i>
-                            <span>Overview</span>
-                        </button>
-                        <button className="tab-button" onClick={() => navigate('/vehicles')}>
-                            <i className="fas fa-car"></i>
-                            <span>Vehicles</span>
-                        </button>
-                        <button className={`tab-button ${activeTab === 'drivers-tab' ? 'active' : ''}`} onClick={() => setActiveTab('drivers-tab')}>
-                            <i className="fas fa-user-tie"></i>
-                            <span>Drivers</span>
-                        </button>
-                        <button className={`tab-button ${activeTab === 'reservations-tab' ? 'active' : ''}`} onClick={() => setActiveTab('reservations-tab')}>
-                            <i className="fas fa-calendar-alt"></i>
-                            <span>Reservations</span>
-                        </button>
-                    </div>
+
 
                     {/* Overview Tab */}
                     {activeTab === 'overview' && (
@@ -305,45 +272,120 @@ const Dashboard = () => {
                         </div>
                     )}
 
-                    {/* Vehicles Tab */}
-                    {activeTab === 'vehicles-tab' && (
+                    {/* Emergency Request Tab */}
+                    {activeTab === 'emergency-tab' && (
+                        <div className="tab-content active">
+                            <div className="section border-l-4 border-l-red-600">
+                                <div className="section-header">
+                                    <h2 className="text-red-700"><i className="fas fa-exclamation-triangle text-red-600"></i> Emergency Vehicle Request</h2>
+                                </div>
+                                <div className="bg-red-50 p-4 rounded-lg mb-6 text-red-800 text-sm border border-red-200">
+                                    <i className="fas fa-info-circle mr-2"></i>
+                                    <strong>High Priority:</strong> This request will be immediately flagged to the Registrar, SAR, and Dean given the urgency. Please use this only for genuine emergencies.
+                                </div>
+                                <form className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Nature of Emergency</label>
+                                            <select className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                                                <option>Medical Emergency</option>
+                                                <option>Security Incident</option>
+                                                <option>Critical Infrastructure Failure</option>
+                                                <option>Other</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Required Immediately?</label>
+                                            <div className="flex items-center space-x-4 mt-2">
+                                                <label className="flex items-center"><input type="radio" name="immediate" className="mr-2" defaultChecked /> Yes</label>
+                                                <label className="flex items-center"><input type="radio" name="immediate" className="mr-2" /> No (Specify Time)</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Description / Location</label>
+                                        <textarea rows="3" className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500" placeholder="Please describe the situation and pickup location..."></textarea>
+                                    </div>
+                                    <button type="button" className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded shadow-lg transition" onClick={() => showNotification("Emergency request sent to administration!", "warning")}>
+                                        <i className="fas fa-paper-plane mr-2"></i> Submit Emergency Request
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* My Reservations Tab */}
+                    {activeTab === 'reservations-tab' && (
                         <div className="tab-content active">
                             <div className="section">
                                 <div className="section-header">
-                                    <h2><i className="fas fa-car"></i> Vehicle Management</h2>
-                                    <button className="btn btn-primary"><i className="fas fa-plus"></i> Add Vehicle</button>
-                                </div>
-                                <div className="filter-section">
-                                    <div className="filter-item">
-                                        <label>Filter by Status:</label>
-                                        <select onChange={(e) => setVehicleStatusFilter(e.target.value)}>
-                                            <option value="all">All Vehicles</option>
-                                            <option value="available">Available</option>
-                                        </select>
-                                    </div>
+                                    <h2><i className="fas fa-calendar-check"></i> My Upcoming Reservations</h2>
+                                    <button className="btn btn-primary" onClick={() => navigate('/reservation')}><i className="fas fa-plus"></i> New Booking</button>
                                 </div>
                                 <table className="data-table">
                                     <thead>
                                         <tr>
-                                            <th>Registration No</th>
-                                            <th>Vehicle Type</th>
-                                            <th>Seats</th>
-                                            <th>Driver</th>
+                                            <th>Ref No</th>
+                                            <th>Date</th>
+                                            <th>Time</th>
+                                            <th>Destination</th>
                                             <th>Status</th>
+                                            <th>Vehicle</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>REQ-2023-001</strong></td>
+                                            <td>2023-10-15</td>
+                                            <td>08:30 AM</td>
+                                            <td>Colombo Fort</td>
+                                            <td><span className="badge badge-success">Confirmed</span></td>
+                                            <td>Toyota Hiace (CAB-1234)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>REQ-2023-005</strong></td>
+                                            <td>2023-10-20</td>
+                                            <td>02:00 PM</td>
+                                            <td>UGC Main Office</td>
+                                            <td><span className="badge badge-info">Driver Assigned</span></td>
+                                            <td>Honda Civic (CAA-5678)</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Pending Approvals Tab */}
+                    {activeTab === 'pending-tab' && (
+                        <div className="tab-content active">
+                            <div className="section">
+                                <div className="section-header">
+                                    <h2><i className="fas fa-clock"></i> Pending Approvals</h2>
+                                </div>
+                                <p className="text-gray-500 mb-4 text-sm">The following requests are awaiting approval from the Head of Department or Dean.</p>
+                                <table className="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Ref No</th>
+                                            <th>Requested Date</th>
+                                            <th>Purpose</th>
+                                            <th>Current Stage</th>
+                                            <th>Submitted On</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td><strong>CAB-1234</strong></td>
-                                            <td>Toyota Hiace</td>
-                                            <td>15</td>
-                                            <td>Mr. Perera</td>
-                                            <td><span className="badge badge-success">Available</span></td>
+                                            <td><strong>REQ-2023-008</strong></td>
+                                            <td>2023-10-25</td>
+                                            <td>Field Visit - Geography Dept</td>
+                                            <td><span className="badge badge-warning">HOD Review</span></td>
+                                            <td>2023-10-10</td>
                                             <td>
                                                 <div className="action-btns">
-                                                    <button className="action-btn action-btn-view"><i className="fas fa-eye"></i></button>
-                                                    <button className="action-btn action-btn-edit"><i className="fas fa-edit"></i></button>
+                                                    <button className="action-btn action-btn-view" title="View Details"><i className="fas fa-eye"></i></button>
+                                                    <button className="action-btn action-btn-delete" title="Cancel Request"><i className="fas fa-times"></i></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -353,15 +395,183 @@ const Dashboard = () => {
                         </div>
                     )}
 
-                    {/* Other tabs can be implemented similarly... */}
-                    {/* Placeholder for other tabs to save space for now, as logic is repetitive */}
-                    {(activeTab === 'drivers-tab' || activeTab === 'reservations-tab' || activeTab === 'maintenance-tab' || activeTab === 'reports-tab') && (
-                        <div className="tab-content active text-center py-20">
-                            <div className="empty-state">
-                                <i className="fas fa-tools text-gray-300 text-6xl mb-4"></i>
-                                <h3 className="text-xl text-gray-600 font-bold">{activeTab.replace('-tab', '').toUpperCase()}</h3>
-                                <p className="text-gray-400">This module is under construction in this demo.</p>
-                                <button className="btn btn-outline mt-4" onClick={() => setActiveTab('overview')}>Back to Dashboard</button>
+                    {/* Past Bookings Tab */}
+                    {activeTab === 'past-bookings-tab' && (
+                        <div className="tab-content active">
+                            <div className="section">
+                                <div className="section-header">
+                                    <h2><i className="fas fa-history"></i> Booking History</h2>
+                                </div>
+                                <table className="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Destination</th>
+                                            <th>Vehicle</th>
+                                            <th>Driver</th>
+                                            <th>Rating</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>2023-09-05</td>
+                                            <td>Kandy (Peradeniya Univ)</td>
+                                            <td>Toyota Coaster</td>
+                                            <td>Mr. Silva</td>
+                                            <td><span className="text-yellow-500"><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i></span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2023-08-12</td>
+                                            <td>Airport Drop</td>
+                                            <td>Honda Civic</td>
+                                            <td>Mr. Perera</td>
+                                            <td><span className="text-yellow-500"><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="far fa-star"></i></span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Vehicle Availability Tab */}
+                    {activeTab === 'availability-tab' && (
+                        <div className="tab-content active">
+                            <div className="section">
+                                <div className="section-header">
+                                    <h2>
+                                        <i className="fas fa-car-side"></i>
+                                        Check Vehicle Availability
+                                    </h2>
+                                    <div className="filter-section" style={{ margin: 0 }}>
+                                        <div className="filter-item">
+                                            <label>Check Date:</label>
+                                            <input
+                                                type="date"
+                                                value={availabilityDate}
+                                                onChange={(e) => setAvailabilityDate(e.target.value)}
+                                            />
+                                        </div>
+                                        <button className="btn btn-primary" onClick={updateAvailability}>
+                                            <i className={`fas fa-search ${loading ? 'fa-spin' : ''}`}></i>
+                                            Check
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="vehicle-grid" style={{ opacity: loading ? 0.5 : 1 }}>
+                                    {/* Vehicle Cards */}
+                                    <div className="vehicle-card">
+                                        <span className="vehicle-status status-available">Available</span>
+                                        <div className="vehicle-icon">
+                                            <i className="fas fa-van-shuttle text-5xl text-emerald-600 drop-shadow-md"></i>
+                                        </div>
+                                        <div className="vehicle-info">
+                                            <h3>Toyota Hiace (15 Seats)</h3>
+                                            <p className="vehicle-details"><i className="fas fa-id-card"></i> <strong>Reg:</strong> CAB-1234</p>
+                                            <p className="vehicle-details"><i className="fas fa-check-circle text-green-600"></i> Free all day</p>
+                                        </div>
+                                        <div className="vehicle-actions">
+                                            <button className="btn btn-secondary btn-small" onClick={() => navigate('/reservation', {
+                                                state: {
+                                                    selectedVehicle: { id: 101, model: 'Toyota Hiace', number: 'CAB-1234', seats: 15, driver: 'Mr. Perera', type: 'Van', status: 'available' },
+                                                    date: availabilityDate
+                                                }
+                                            })}>
+                                                <i className="fas fa-calendar-plus"></i> Book Now
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="vehicle-card">
+                                        <span className="vehicle-status status-booked">Fully Booked</span>
+                                        <div className="vehicle-icon">
+                                            <i className="fas fa-car-side text-5xl text-blue-600 drop-shadow-md"></i>
+                                        </div>
+                                        <div className="vehicle-info">
+                                            <h3>Honda Civic (4 Seats)</h3>
+                                            <p className="vehicle-details"><i className="fas fa-id-card"></i> <strong>Reg:</strong> CAA-5678</p>
+                                            <p className="vehicle-details"><i className="fas fa-clock text-red-500"></i> Booked until 5:00 PM</p>
+                                        </div>
+                                        <div className="vehicle-actions">
+                                            <button className="btn btn-outline btn-small disabled:opacity-50 cursor-not-allowed">
+                                                <i className="fas fa-calendar-times"></i> Unavailable
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="vehicle-card">
+                                        <span className="vehicle-status status-available">Available</span>
+                                        <div className="vehicle-icon">
+                                            <i className="fas fa-bus text-5xl text-emerald-600 drop-shadow-md"></i>
+                                        </div>
+                                        <div className="vehicle-info">
+                                            <h3>Toyota Coaster (29 Seats)</h3>
+                                            <p className="vehicle-details"><i className="fas fa-id-card"></i> <strong>Reg:</strong> NB-9999</p>
+                                            <p className="vehicle-details"><i className="fas fa-check-circle text-green-600"></i> Free after 10:00 AM</p>
+                                        </div>
+                                        <div className="vehicle-actions">
+                                            <button className="btn btn-secondary btn-small" onClick={() => navigate('/reservation', {
+                                                state: {
+                                                    selectedVehicle: { id: 102, model: 'Toyota Coaster', number: 'NB-9999', seats: 29, driver: 'TBA', type: 'Bus', status: 'available' },
+                                                    date: availabilityDate
+                                                }
+                                            })}>
+                                                <i className="fas fa-calendar-plus"></i> Book Now
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Settings Tab */}
+                    {activeTab === 'settings-tab' && (
+                        <div className="tab-content active animation-fade-in">
+                            <div className="section border-l-4 border-l-red-600">
+                                <div className="section-header">
+                                    <h2 className="text-red-700"><i className="fas fa-cog"></i> System Settings</h2>
+                                </div>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                                    {/* Security Settings */}
+                                    <div>
+                                        <h3 className="text-lg font-bold text-red-700 mb-4 border-b border-red-200 pb-2">
+                                            <i className="fas fa-shield-alt mr-2 text-red-700"></i>Security
+                                        </h3>
+                                        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); showNotification('Password updated successfully', 'success'); }}>
+                                            <div className="filter-item">
+                                                <label className="text-red-900">Current Password</label>
+                                                <input type="password" placeholder="••••••••" className="w-full border-red-200 focus:border-red-500 bg-red-50 text-red-900 placeholder:text-red-300" />
+                                            </div>
+                                            <div className="filter-item">
+                                                <label className="text-red-900">New Password</label>
+                                                <input type="password" placeholder="••••••••" className="w-full border-red-200 focus:border-red-500 bg-red-50 text-red-900 placeholder:text-red-300" />
+                                            </div>
+                                            <div className="filter-item">
+                                                <label className="text-red-900">Confirm Password</label>
+                                                <input type="password" placeholder="••••••••" className="w-full border-red-200 focus:border-red-500 bg-red-50 text-red-900 placeholder:text-red-300" />
+                                            </div>
+                                            <button className="btn btn-primary w-full mt-4 bg-red-800 hover:bg-red-900 border-none text-white shadow-md">Update Password</button>
+                                        </form>
+                                    </div>
+
+                                    {/* Help & Support */}
+                                    <div>
+                                        <div className="p-6 bg-red-50 border border-red-200 rounded-xl shadow-lg">
+                                            <h4 className="text-red-900 font-bold mb-3 text-lg flex items-center">
+                                                <i className="fas fa-info-circle mr-3 text-red-700 text-xl"></i>
+                                                Help & Support
+                                            </h4>
+                                            <p className="text-red-800 text-sm mb-6 leading-relaxed">
+                                                Need assistance? Contact the administration office for help with account issues or vehicle policies.
+                                            </p>
+                                            <button className="w-full py-3 px-4 bg-red-700 hover:bg-red-800 text-white rounded-lg font-medium transition flex items-center justify-center gap-2 shadow-sm">
+                                                <i className="fas fa-file-download text-red-200"></i>
+                                                Download System Manual
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                </div>
                             </div>
                         </div>
                     )}

@@ -8,7 +8,11 @@ import {
     faEyeSlash,
     faInfoCircle,
     faTimes,
-    faSpinner
+    faSpinner,
+    faBuilding,
+    faPhone,
+    faGraduationCap,
+    faUniversity
 } from '@fortawesome/free-solid-svg-icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -25,7 +29,7 @@ const App = () => {
     // Forgot Password Modal States
     const [showForgotModal, setShowForgotModal] = useState(false);
     const [fpEmail, setFpEmail] = useState('');
-    const [fpStep, setFpStep] = useState(1); // 1: Request, 2: Reset
+    const [fpStep, setFpStep] = useState(1);
     const [fpLoading, setFpLoading] = useState(false);
     const [fpAlert, setFpAlert] = useState({ show: false, type: '', message: '' });
     const [fpCode, setFpCode] = useState('');
@@ -77,11 +81,16 @@ const App = () => {
     };
 
     const redirectToDashboard = (role) => {
-        // For this demo, all roles go to the main dashboard
-        if (role) {
-            navigate('/dashboard');
+        if (role === 'registrar') {
+            navigate('/registrar-dashboard');
+        } else if (role === 'sar') {
+            navigate('/sar-dashboard');
+        } else if (role === 'hod') {
+            navigate('/hod-dashboard');
+        } else if (role === 'dean') {
+            navigate('/dean-dashboard');
         } else {
-            alert('Invalid role selected');
+            navigate('/dashboard');
         }
     };
 
@@ -99,7 +108,6 @@ const App = () => {
                 const expectedPassword = getPasswordForEmail(normalizedEmail);
 
                 if (expectedPassword === password && account.role === role) {
-                    // Store user data
                     const userData = {
                         email: normalizedEmail,
                         name: account.name,
@@ -108,6 +116,7 @@ const App = () => {
                     };
                     sessionStorage.setItem('isLoggedIn', 'true');
                     sessionStorage.setItem('userRole', role);
+                    sessionStorage.setItem('userName', account.name);
                     localStorage.setItem('currentUser', JSON.stringify(userData));
 
                     redirectToDashboard(role);
@@ -132,13 +141,9 @@ const App = () => {
 
         setFpLoading(true);
         try {
-            // Simulate API call
             await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Demo logic
             const code = String(Math.floor(100000 + Math.random() * 900000));
             sessionStorage.setItem(`${FP_DEMO_PREFIX}${email}`, JSON.stringify({ code, createdAt: Date.now() }));
-
             console.log(`[VMS Demo] Password reset code for ${email}: ${code}`);
             showAlert('warning', `Demo mode: backend not reachable. Use code: ${code}`);
             setFpStep(2);
@@ -198,187 +203,187 @@ const App = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-                {/* Logo and Title */}
-                <div className="text-center mb-8">
-                    <div className="w-24 h-24 mx-auto mb-4 relative">
-                        <img
-                            src="/assets/uok_logo.png"
-                            alt="University of Kelaniya Logo"
-                            className="w-full h-full object-contain drop-shadow-2xl"
-                        />
+        <div className="min-h-screen flex">
+            {/* Left Panel - Branding (Matches Signup.jsx) */}
+            <div className="hidden lg:flex lg:w-1/2 flex-col justify-center p-12 text-white relative overflow-hidden bg-gradient-to-br from-[#2d0a0a] to-[#400f0f]">
+                {/* Overlay */}
+                <div
+                    className="absolute inset-0 z-0 opacity-20"
+                    style={{
+                        backgroundImage: "url('/assets/background.JPG')",
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                    }}
+                />
+
+                {/* Elements */}
+                <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#660000]/90 to-[#2d0a0a]/95" />
+
+                <div className="max-w-md relative z-10 mx-auto text-center lg:text-left">
+                    <div className="mb-8">
+                        <div className="w-24 h-24 mb-6 relative mx-auto lg:mx-0">
+                            <img src="/assets/uok_logo.png" alt="University Log" className="w-full h-full object-contain drop-shadow-2xl" />
+                        </div>
+                        <h1 className="text-4xl font-bold mb-4 font-serif">University of Kelaniya</h1>
+                        <p className="text-xl text-[#F6DD26] mb-2 font-medium tracking-wide">Vehicle Management System</p>
+                        <p className="text-lg text-white/80">Authorized Access Only</p>
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Vehicle Management System</h1>
-                    <p className="text-gray-300 text-lg">University of Kelaniya</p>
-                </div>
 
-                {/* Login Form */}
-                <div className="login-card rounded-2xl card-shadow p-8">
-                    <div className="text-center mb-6">
-                        <h2 className="text-2xl font-bold text-white">Welcome Back</h2>
-                        <p className="text-gray-300 mt-2">Sign in to your account</p>
-                    </div>
+                    <div className="sapce-y-6 text-white/80 font-light">
+                        <p className="mb-4">Welcome to the official transportation management portal. Please sign in with your academic or administrative credentials to access fleet services.</p>
 
-                    <form onSubmit={handleLogin} className="space-y-6">
-                        {/* Email Input */}
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                                Email Address
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <FontAwesomeIcon icon={faEnvelope} className="text-gray-400" />
-                                </div>
-                                <input
-                                    type="email"
-                                    id="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    className="input-field block w-full pl-10 pr-3 py-3 rounded-lg focus:outline-none focus:ring-2 transition duration-200"
-                                    placeholder="Enter your email"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Password Input */}
-                        <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
-                                Password
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <FontAwesomeIcon icon={faLock} className="text-gray-400" />
-                                </div>
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    id="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    className="input-field block w-full pl-10 pr-10 py-3 rounded-lg focus:outline-none focus:ring-2 transition duration-200"
-                                    placeholder="Enter your password"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                                >
-                                    <FontAwesomeIcon
-                                        icon={showPassword ? faEyeSlash : faEye}
-                                        className="text-gray-400 hover:text-gray-300 transition-colors"
-                                    />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Role Selection */}
-                        <div>
-                            <label htmlFor="role" className="block text-sm font-medium text-gray-300 mb-2">
-                                Login as
-                            </label>
-                            <select
-                                id="role"
-                                value={role}
-                                onChange={(e) => setRole(e.target.value)}
-                                required
-                                className="input-field block w-full px-3 py-3 rounded-lg focus:outline-none focus:ring-2 transition duration-200"
-                            >
-                                <option value="">Select your role</option>
-                                <option value="staff">Staff</option>
-                                <option value="hod">Head of Department</option>
-                                <option value="dean">Dean</option>
-                                <option value="sar">Senior Assistant Registrar</option>
-                                <option value="registrar">Registrar</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
-
-                        {/* Remember Me & Forgot Password */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4 text-sm mt-8 border-t border-white/10 pt-6">
                             <div className="flex items-center">
-                                <input
-                                    id="remember-me"
-                                    type="checkbox"
-                                    checked={rememberMe}
-                                    onChange={(e) => setRememberMe(e.target.checked)}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 rounded bg-gray-700"
-                                />
-                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">
-                                    Remember me
-                                </label>
+                                <FontAwesomeIcon icon={faUniversity} className="text-[#F6DD26] mr-2" />
+                                <span>Administration</span>
                             </div>
-                            <div className="text-sm">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowForgotModal(true);
-                                        setFpEmail(email);
-                                    }}
-                                    className="font-medium text-blue-400 hover:text-blue-300 transition duration-200"
-                                >
-                                    Forgot password?
-                                </button>
+                            <div className="flex items-center">
+                                <FontAwesomeIcon icon={faBuilding} className="text-[#F6DD26] mr-2" />
+                                <span>Faculties</span>
+                            </div>
+                            <div className="flex items-center">
+                                <FontAwesomeIcon icon={faGraduationCap} className="text-[#F6DD26] mr-2" />
+                                <span>Departments</span>
                             </div>
                         </div>
-
-                        {/* Submit Button */}
-                        <button
-                            type="submit"
-                            disabled={isLoggingIn}
-                            className="btn-primary w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200 disabled:opacity-70"
-                        >
-                            {isLoggingIn && (
-                                <FontAwesomeIcon icon={faSpinner} className="animate-spin -ml-1 mr-3 h-5 w-5" />
-                            )}
-                            <span>{isLoggingIn ? 'Signing in...' : 'Sign In'}</span>
-                        </button>
-                    </form>
-
-                    {/* Demo Accounts Info Box */}
-                    <div className="mt-6 bg-blue-900/30 border border-blue-700/50 rounded-lg p-4">
-                        <div className="flex items-start">
-                            <FontAwesomeIcon icon={faInfoCircle} className="text-blue-400 mt-1 mr-2 flex-shrink-0" />
-                            <div>
-                                <h4 className="text-sm font-medium text-blue-300 mb-2">Demo Accounts Available</h4>
-                                <div className="text-[10px] sm:text-xs text-gray-300 space-y-1">
-                                    <p><strong>Admin:</strong> admin@uok.lk / Admin@123</p>
-                                    <p><strong>Staff:</strong> staff@uok.lk / Staff@123</p>
-                                    <p><strong>HOD:</strong> hod@uok.lk / Hod@123</p>
-                                    <p><strong>Dean:</strong> dean@uok.lk / Dean@123</p>
-                                    <p><strong>SAR:</strong> sar@uok.lk / Sar@123</p>
-                                    <p><strong>Registrar:</strong> registrar@uok.lk / Registrar@123</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Divider */}
-                    <div className="mt-6 font-Inter">
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-600"></div>
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-slate-700 text-gray-300 rounded">New to UoK VMS?</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Sign Up Link */}
-                    <div className="mt-6 text-center">
-                        <Link to="/signup.html" className="font-medium text-uok-yellow hover:text-yellow-300 transition duration-200">
-                            Create an account
-                        </Link>
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="text-center mt-8">
-                    <p className="text-red-200/60 text-sm">
-                        © 2025 University of Kelaniya. All rights reserved.
-                    </p>
+                <div className="absolute bottom-6 left-0 right-0 text-center text-xs text-white/30">
+                    © 2025 University of Kelaniya • Dalugama, Sri Lanka
+                </div>
+            </div>
+
+            {/* Right Panel - Login Form */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 relative overflow-hidden bg-[#0f172a]">
+                {/* Background Image - Increased Visibility */}
+                <div
+                    className="absolute inset-0 z-0 opacity-40"
+                    style={{
+                        backgroundImage: "url('/assets/background.JPG')",
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                    }}
+                />
+
+                {/* Gradient Overlay - Reduced Opacity to let image show through */}
+                <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0f172a]/75 to-[#1e293b]/75" />
+
+                <div className="w-full max-w-md relative z-10">
+                    <div className="login-card rounded-2xl card-shadow p-8 border border-[#F6DD26]/20 bg-[#1e293b]/90 backdrop-blur">
+                        <div className="text-center mb-6">
+                            <h2 className="text-2xl font-bold text-white">Welcome Back</h2>
+                            <p className="text-gray-300 mt-2">Sign in to your account</p>
+                        </div>
+
+                        <form onSubmit={handleLogin} className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <FontAwesomeIcon icon={faEnvelope} className="text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        className="input-field block w-full pl-10 pr-3 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6DD26] transition bg-[#2d0a0a] border-[#F6DD26]/30 text-white placeholder-gray-400"
+                                        placeholder="Enter your email"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <FontAwesomeIcon icon={faLock} className="text-gray-400" />
+                                    </div>
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        className="input-field block w-full pl-10 pr-10 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6DD26] transition bg-[#2d0a0a] border-[#F6DD26]/30 text-white placeholder-gray-400"
+                                        placeholder="Enter your password"
+                                    />
+                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                        <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} className="text-gray-400 hover:text-gray-300" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Login as</label>
+                                <select
+                                    value={role}
+                                    onChange={(e) => setRole(e.target.value)}
+                                    required
+                                    className="input-field block w-full px-3 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6DD26] transition bg-[#2d0a0a] border-[#F6DD26]/30 text-white"
+                                >
+                                    <option value="" className="bg-[#2d0a0a] text-white">Select your role</option>
+                                    <option value="staff" className="bg-[#2d0a0a] text-white">Staff</option>
+                                    <option value="hod" className="bg-[#2d0a0a] text-white">Head of Department</option>
+                                    <option value="dean" className="bg-[#2d0a0a] text-white">Dean</option>
+                                    <option value="sar" className="bg-[#2d0a0a] text-white">Senior Assistant Registrar</option>
+                                    <option value="registrar" className="bg-[#2d0a0a] text-white">Registrar</option>
+                                    <option value="admin" className="bg-[#2d0a0a] text-white">Admin</option>
+                                </select>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <input
+                                        id="remember-me"
+                                        type="checkbox"
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
+                                        className="h-4 w-4 text-[#660000] focus:ring-[#660000] border-gray-600 rounded bg-gray-700"
+                                    />
+                                    <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">Remember me</label>
+                                </div>
+                                <div className="text-sm">
+                                    <button type="button" onClick={() => { setShowForgotModal(true); setFpEmail(email); }} className="font-medium text-[#F6DD26] hover:text-yellow-300 transition">
+                                        Forgot password?
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={isLoggingIn}
+                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-[#660000] hover:bg-[#800000] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#660000] transition transform hover:-translate-y-0.5 disabled:opacity-70"
+                            >
+                                {isLoggingIn && <FontAwesomeIcon icon={faSpinner} className="animate-spin -ml-1 mr-3 h-5 w-5" />}
+                                <span>{isLoggingIn ? 'Signing in...' : 'Sign In'}</span>
+                            </button>
+                        </form>
+
+                        {/* Demo Accounts */}
+                        <div className="mt-6 bg-[#0f172a]/50 border border-[#F6DD26]/30 rounded-lg p-4 text-left">
+                            <div className="flex items-start">
+                                <FontAwesomeIcon icon={faInfoCircle} className="text-[#F6DD26] mt-1 mr-2" />
+                                <div>
+                                    <h4 className="text-sm font-medium text-[#F6DD26] mb-2">Demo Accounts</h4>
+                                    <div className="text-[10px] sm:text-xs text-gray-400 space-y-1">
+                                        <p><strong>Registrar:</strong> registrar@uok.lk / Registrar@123</p>
+                                        <p><strong>SAR:</strong> sar@uok.lk / Sar@123</p>
+                                        <p><strong>HOD:</strong> hod@uok.lk / Hod@123</p>
+                                        <p><strong>Dean:</strong> dean@uok.lk / Dean@123</p>
+                                        <p><strong>Staff:</strong> staff@uok.lk / Staff@123</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 text-center pt-4 border-t border-gray-700">
+                            <span className="text-gray-400 text-sm">New to UoK VMS? </span>
+                            <Link to="/signup.html" className="font-semibold text-[#F6DD26] hover:text-yellow-300 transition text-sm">
+                                Create an account
+                            </Link>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -386,130 +391,38 @@ const App = () => {
             <AnimatePresence>
                 {showForgotModal && (
                     <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                            onClick={() => setShowForgotModal(false)}
-                        />
-                        <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            className="relative w-full max-w-md login-card rounded-2xl card-shadow p-6 border border-white/10 z-10"
-                        >
-                            <div className="flex items-start justify-between gap-4">
-                                <div>
-                                    <h3 className="text-xl font-bold text-white">Reset password</h3>
-                                    <p className="text-gray-300 text-sm mt-1">
-                                        {fpStep === 1
-                                            ? 'Enter your email to receive a verification code.'
-                                            : `We sent a code to ${fpEmail}. Enter it below to reset your password.`}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => setShowForgotModal(false)}
-                                    className="text-gray-300 hover:text-white transition-colors"
-                                >
-                                    <FontAwesomeIcon icon={faTimes} className="text-xl" />
-                                </button>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowForgotModal(false)} />
+                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative w-full max-w-md bg-[#1e293b] rounded-2xl p-6 border border-[#F6DD26]/30 z-10 shadow-2xl">
+                            <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-xl font-bold text-white">Reset Password</h3>
+                                <button onClick={() => setShowForgotModal(false)}><FontAwesomeIcon icon={faTimes} className="text-gray-400 hover:text-white" /></button>
                             </div>
 
                             {fpAlert.show && (
-                                <div className={`mt-4 rounded-lg border px-4 py-3 text-sm ${fpAlert.type === 'success' ? 'border-emerald-400/40 bg-emerald-900/25 text-emerald-100' :
-                                    fpAlert.type === 'warning' ? 'border-amber-400/40 bg-amber-900/25 text-amber-100' :
-                                        'border-red-400/40 bg-red-900/25 text-red-100'
-                                    }`}>
+                                <div className={`mb-4 p-3 rounded text-sm ${fpAlert.type === 'error' ? 'bg-red-900/50 text-red-200 border border-red-900' : 'bg-green-900/50 text-green-200 border border-green-900'}`}>
                                     {fpAlert.message}
                                 </div>
                             )}
 
-                            {/* Step 1: Request Code */}
                             {fpStep === 1 && (
-                                <div className="mt-5 space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
-                                        <input
-                                            type="email"
-                                            value={fpEmail}
-                                            onChange={(e) => setFpEmail(e.target.value)}
-                                            className="input-field block w-full px-3 py-3 rounded-lg focus:outline-none focus:ring-2 transition duration-200"
-                                            placeholder="Enter your email"
-                                        />
-                                        <p className="text-xs text-gray-400 mt-2">If the email exists, we’ll send a reset code.</p>
-                                    </div>
-                                    <button
-                                        onClick={handleSendCode}
-                                        disabled={fpLoading}
-                                        className="btn-primary w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200 disabled:opacity-70"
-                                    >
-                                        {fpLoading && <FontAwesomeIcon icon={faSpinner} className="animate-spin -ml-1 mr-3 h-5 w-5" />}
-                                        <span>{fpLoading ? 'Sending...' : 'Send code'}</span>
+                                <div className="space-y-4">
+                                    <p className="text-gray-300 text-sm">Enter your university email to receive a code.</p>
+                                    <input type="email" value={fpEmail} onChange={(e) => setFpEmail(e.target.value)} className="w-full p-3 rounded bg-[#0f172a] border border-gray-600 text-white focus:border-[#F6DD26]" placeholder="Email Address" />
+                                    <button onClick={handleSendCode} disabled={fpLoading} className="w-full py-3 bg-[#660000] hover:bg-[#800000] text-white rounded font-bold disabled:opacity-50">
+                                        {fpLoading ? 'Sending...' : 'Send Code'}
                                     </button>
-                                    <div className="text-xs text-gray-400 italic">
-                                        Demo tip: If no backend is running, a code will be logged to console.
-                                    </div>
                                 </div>
                             )}
 
-                            {/* Step 2: Verify + Reset */}
                             {fpStep === 2 && (
-                                <div className="mt-5 space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Verification Code</label>
-                                        <input
-                                            type="text"
-                                            maxLength="6"
-                                            value={fpCode}
-                                            onChange={(e) => setFpCode(e.target.value)}
-                                            className="input-field block w-full px-3 py-3 rounded-lg focus:outline-none focus:ring-2 transition duration-200"
-                                            placeholder="Enter 6-digit code"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
-                                        <input
-                                            type="password"
-                                            value={fpNewPassword}
-                                            onChange={(e) => setFpNewPassword(e.target.value)}
-                                            className="input-field block w-full px-3 py-3 rounded-lg focus:outline-none focus:ring-2 transition duration-200"
-                                            placeholder="Create a new password"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
-                                        <input
-                                            type="password"
-                                            value={fpConfirmPassword}
-                                            onChange={(e) => setFpConfirmPassword(e.target.value)}
-                                            className="input-field block w-full px-3 py-3 rounded-lg focus:outline-none focus:ring-2 transition duration-200"
-                                            placeholder="Re-enter new password"
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={handleResetPassword}
-                                        disabled={fpLoading}
-                                        className="btn-primary w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200 disabled:opacity-70"
-                                    >
-                                        {fpLoading && <FontAwesomeIcon icon={faSpinner} className="animate-spin -ml-1 mr-3 h-5 w-5" />}
-                                        <span>{fpLoading ? 'Resetting...' : 'Reset password'}</span>
+                                <div className="space-y-4">
+                                    <p className="text-gray-300 text-sm">Enter the code sent to {fpEmail}</p>
+                                    <input type="text" value={fpCode} onChange={(e) => setFpCode(e.target.value)} className="w-full p-3 rounded bg-[#0f172a] border border-gray-600 text-white" placeholder="6-Digit Code" />
+                                    <input type="password" value={fpNewPassword} onChange={(e) => setFpNewPassword(e.target.value)} className="w-full p-3 rounded bg-[#0f172a] border border-gray-600 text-white" placeholder="New Password" />
+                                    <input type="password" value={fpConfirmPassword} onChange={(e) => setFpConfirmPassword(e.target.value)} className="w-full p-3 rounded bg-[#0f172a] border border-gray-600 text-white" placeholder="Confirm Password" />
+                                    <button onClick={handleResetPassword} disabled={fpLoading} className="w-full py-3 bg-[#660000] hover:bg-[#800000] text-white rounded font-bold disabled:opacity-50">
+                                        {fpLoading ? 'Resetting...' : 'Reset Password'}
                                     </button>
-
-                                    <div className="flex items-center justify-between text-sm">
-                                        <button
-                                            onClick={() => { setFpStep(1); clearAlert(); }}
-                                            className="text-blue-400 hover:text-blue-300 transition duration-200"
-                                        >
-                                            Back
-                                        </button>
-                                        <button
-                                            onClick={() => { setFpStep(1); handleSendCode(); }}
-                                            className="text-blue-400 hover:text-blue-300 transition duration-200"
-                                        >
-                                            Resend code
-                                        </button>
-                                    </div>
                                 </div>
                             )}
                         </motion.div>
