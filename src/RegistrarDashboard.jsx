@@ -66,14 +66,52 @@ const MOCK_PENDING_REQUESTS = [
 const RegistrarDashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
-    const [user, setUser] = useState({ name: 'Dr. Gunawardane', role: 'Registrar' });
+    const [user, setUser] = useState(JSON.parse(localStorage.getItem('currentUser') || '{"name": "Registrar", "role": "registrar"}'));
     const [searchQuery, setSearchQuery] = useState('');
 
     // Data States
     const [fleetData, setFleetData] = useState(MOCK_FLEET);
     const [driverData, setDriverData] = useState(MOCK_DRIVERS);
     const [maintenanceData, setMaintenanceData] = useState(MOCK_MAINTENANCE);
-    const [pendingRequests, setPendingRequests] = useState(MOCK_PENDING_REQUESTS);
+
+    const [reservations, setReservations] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchReservations = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch('http://localhost:5000/api/reservations');
+            if (response.ok) {
+                const data = await response.json();
+                setReservations(data);
+            }
+        } catch (error) {
+            console.error('Error fetching reservations:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchReservations();
+        const interval = setInterval(fetchReservations, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Filtered lists for the Registrar
+    const pendingRequests = reservations
+        .filter(r => r.status === 'pending_registrar')
+        .map(r => ({
+            id: r.reservation_id,
+            department: r.department || 'N/A',
+            purpose: r.description,
+            date: new Date(r.start_datetime).toLocaleDateString(),
+            time: new Date(r.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            passengers: r.passengers_count,
+            distance: `${r.distance_km} km`,
+            priority: r.distance_km > 200 ? 'Executive' : 'High',
+            submittedBy: `${r.first_name || ''} ${r.last_name || 'Staff'}`
+        }));
 
     // Modal State
     const [modal, setModal] = useState({ show: false, type: '', data: null });
@@ -99,16 +137,31 @@ const RegistrarDashboard = () => {
         setApprovalComment('');
     };
 
-    const handleAction = (action) => {
+    const handleAction = async (action) => {
         if (!modal.data) return;
         const id = modal.data.id;
 
-        if (action === 'approve') {
-            setPendingRequests(prev => prev.filter(req => req.id !== id));
-            alert(`Request #${id} Approved Successfully.`);
-        } else if (action === 'reject') {
-            setPendingRequests(prev => prev.filter(req => req.id !== id));
-            alert(`Request #${id} Rejected.`);
+        try {
+            const apiStatus = action === 'reject' ? 'rejected' : 'approved';
+            const response = await fetch(`http://localhost:5000/api/reservations/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: apiStatus,
+                    level: 'registrar',
+                    comments: approvalComment
+                })
+            });
+
+            if (response.ok) {
+                alert(`Request #${id} ${action === 'approve' ? 'Approved' : 'Rejected'} Successfully.`);
+                fetchReservations();
+            } else {
+                alert('Failed to update status');
+            }
+        } catch (error) {
+            console.error('Registrar Action Error:', error);
+            alert('Error processing request');
         }
         handleModalClose();
     };
@@ -395,7 +448,7 @@ const RegistrarDashboard = () => {
                                 </div>
                             </div>
                             <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-full flex items-center justify-center shadow-lg cursor-pointer transform hover:scale-105 transition">
-                                <span className="text-sm font-bold text-white">RG</span>
+                                <span className="text-sm font-bold text-white">{user.name.charAt(0)}</span>
                             </div>
                         </div>
                     </div>

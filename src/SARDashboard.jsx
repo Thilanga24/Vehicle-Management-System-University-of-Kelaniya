@@ -6,79 +6,55 @@ const SARDashboard = () => {
     const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false); // For responsive, though not fully styled in HTML provided
-    const [user, setUser] = useState({ name: 'Ms. Rathnayake', role: 'Senior Assistant Registrar' });
+    const [user, setUser] = useState(JSON.parse(localStorage.getItem('currentUser') || '{"name": "Admin", "role": "sar"}'));
 
-    // Approvals State
-    const [showApprovalModal, setShowApprovalModal] = useState(false);
-    const [selectedRequest, setSelectedRequest] = useState(null);
-    const [sarComment, setSarComment] = useState('');
+    const [reservations, setReservations] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Mock data based on HTML
-    const stats = [
-        { label: 'Admin Approvals', value: 18, change: '+6 from yesterday', sub: 'SAR Decision Required', icon: 'fa-file-signature', color: 'yellow' },
-        { label: 'Total Fleet', value: 24, change: 'Available: 18', sub: 'University vehicles', icon: 'fa-car', color: 'blue' },
-        { label: 'Active Drivers', value: 16, change: 'On duty: 12', sub: 'Assigned drivers', icon: 'fa-users', color: 'green' },
-        { label: 'Maintenance Alerts', value: 5, change: 'Urgent: 2', sub: 'Needs attention', icon: 'fa-tools', color: 'red' },
-    ];
-
-    const [approvalQueue, setApprovalQueue] = useState([
-        {
-            id: 'REQ-101',
-            type: 'Local Conference',
-            requester: 'Dean - Faculty of Science',
-            distance: 45,
-            passengers: 12,
-            date: '2025-10-16',
-            time: '08:00 AM',
-            vehicleType: 'University Bus',
-            submittedAt: '2 hours ago',
-            status: 'pending_sar', // pending_sar, pending_registrar
-            message: 'Trip to Colombo for conference.',
-            priority: 'normal'
-        },
-        {
-            id: 'REQ-102',
-            type: 'Inter-University Research',
-            requester: 'Dean - Faculty of Humanities',
-            distance: 180,
-            passengers: 4,
-            date: '2025-10-20 to 2025-10-22',
-            time: '06:00 AM',
-            vehicleType: 'Van',
-            submittedAt: '5 hours ago',
-            status: 'pending_sar',
-            message: 'Field visit to Peradeniya University.',
-            priority: 'high'
-        },
-        {
-            id: 'REQ-103',
-            type: 'Student Field Visit',
-            requester: 'HOD - Geography',
-            distance: 30,
-            passengers: 40,
-            date: '2025-10-18',
-            time: '07:30 AM',
-            vehicleType: 'Large Bus',
-            submittedAt: '1 day ago',
-            status: 'pending_sar',
-            message: 'Annual field visit to Botanical Gardens.',
-            priority: 'normal'
-        },
-        {
-            id: 'REQ-104',
-            type: 'Staff Transport',
-            requester: 'Admin Office',
-            distance: 120,
-            passengers: 8,
-            date: '2025-10-25',
-            time: '09:00 AM',
-            vehicleType: 'Van',
-            submittedAt: '1 day ago',
-            status: 'pending_sar',
-            message: 'Transport for visiting delegates.',
-            priority: 'high'
+    const fetchReservations = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch('http://localhost:5000/api/reservations');
+            if (response.ok) {
+                const data = await response.json();
+                setReservations(data);
+            }
+        } catch (error) {
+            console.error('Error fetching reservations:', error);
+        } finally {
+            setLoading(false);
         }
-    ]);
+    };
+
+    useEffect(() => {
+        fetchReservations();
+        const interval = setInterval(fetchReservations, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Filtered lists for the SAR
+    const approvalQueue = reservations
+        .filter(r => r.status === 'pending_sar')
+        .map(r => ({
+            id: r.reservation_id,
+            type: 'Vehicle Request',
+            requester: `${r.first_name || ''} ${r.last_name || 'Staff'}`,
+            distance: r.distance_km,
+            passengers: r.passengers_count,
+            date: new Date(r.start_datetime).toLocaleDateString(),
+            time: new Date(r.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            vehicleType: r.model || 'N/A',
+            submittedAt: new Date(r.created_at).toLocaleDateString(),
+            message: r.description,
+            priority: r.distance_km > 100 ? 'high' : 'normal'
+        }));
+
+    const stats = [
+        { label: 'Pending Approvals', value: approvalQueue.length, change: 'SAR Decision', sub: 'Needs Review', icon: 'fa-file-signature', color: 'yellow' },
+        { label: 'Total Fleet', value: 24, change: 'Fleet Overview', sub: 'University vehicles', icon: 'fa-car', color: 'blue' },
+        { label: 'Active Tasks', value: reservations.filter(r => r.status === 'approved').length, change: 'Approved', sub: 'Confirmed trips', icon: 'fa-users', color: 'green' },
+        { label: 'Rejected', value: reservations.filter(r => r.status === 'rejected').length, change: 'Requests', sub: 'Total rejected', icon: 'fa-tools', color: 'red' },
+    ];
 
     useEffect(() => {
         const storedUser = sessionStorage.getItem('userName');
@@ -93,24 +69,48 @@ const SARDashboard = () => {
         navigate('/login');
     };
 
+    const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [selectedRequest, setSelectedRequest] = useState(null);
+    const [sarComment, setSarComment] = useState('');
+
     const handleOpenModal = (req) => {
         setSelectedRequest(req);
         setShowApprovalModal(true);
         setSarComment('');
     };
 
-    const handleProcessRequest = (action) => {
+    const handleProcessRequest = async (action) => {
         if (!selectedRequest) return;
 
-        // Remove from list for demo
-        setApprovalQueue(prev => prev.filter(r => r.id !== selectedRequest.id));
+        try {
+            const apiStatus = action === 'reject' ? 'rejected' : 'approved';
+            // Note: Our backend handles forwarding automatically if level='sar' and dist > 100
+            const response = await fetch(`http://localhost:5000/api/reservations/${selectedRequest.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: apiStatus,
+                    level: 'sar',
+                    comments: sarComment
+                })
+            });
 
-        let message = '';
-        if (action === 'approve') message = `Request ${selectedRequest.id} Approved.`;
-        if (action === 'reject') message = `Request ${selectedRequest.id} Rejected.`;
-        if (action === 'forward') message = `Request ${selectedRequest.id} Forwarded to Registrar.`;
+            if (response.ok) {
+                let message = '';
+                if (action === 'approve') message = `Request ${selectedRequest.id} Approved.`;
+                if (action === 'forward') message = `Request ${selectedRequest.id} Forwarded to Registrar.`;
+                if (action === 'reject') message = `Request ${selectedRequest.id} Rejected.`;
 
-        alert(message);
+                alert(message);
+                fetchReservations();
+            } else {
+                alert('Failed to update status');
+            }
+        } catch (error) {
+            console.error('SAR Approval Error:', error);
+            alert('Error processing request');
+        }
+
         setShowApprovalModal(false);
         setSelectedRequest(null);
     };
@@ -228,7 +228,7 @@ const SARDashboard = () => {
                             </div>
                         </div>
                         <div className="w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-orange-700 transition">
-                            <span className="text-sm font-medium text-white">SR</span>
+                            <span className="text-sm font-medium text-white">{user.name.charAt(0)}</span>
                         </div>
                     </div>
                 </div>

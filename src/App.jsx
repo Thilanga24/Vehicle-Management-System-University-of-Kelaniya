@@ -21,7 +21,6 @@ const App = () => {
     // --- States ---
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [role, setRole] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
@@ -85,21 +84,14 @@ const App = () => {
             const data = await response.json();
 
             if (response.ok) {
-                // Check if selected role matches the user's actual role
-                if (data.user.role !== role) {
-                    alert(`Role Mismatch: This account is registered as '${data.user.role}', but you selected '${role}'.`);
-                    setIsLoggingIn(false);
-                    return;
-                }
-
                 // Success
                 sessionStorage.setItem('isLoggedIn', 'true');
-                sessionStorage.setItem('userRole', role);
+                sessionStorage.setItem('userRole', data.user.role);
                 sessionStorage.setItem('userName', data.user.name);
                 sessionStorage.setItem('authToken', data.token);
                 localStorage.setItem('currentUser', JSON.stringify(data.user));
 
-                redirectToDashboard(role);
+                redirectToDashboard(data.user.role);
             } else {
                 alert(data.message || 'Login failed');
             }
@@ -232,24 +224,6 @@ const App = () => {
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Login as</label>
-                                <select
-                                    value={role}
-                                    onChange={(e) => setRole(e.target.value)}
-                                    required
-                                    className="block w-full px-3 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6DD26] transition bg-white border border-gray-300 text-gray-900"
-                                >
-                                    <option value="" className="text-gray-500">Select your role</option>
-                                    <option value="staff" className="text-gray-900">Staff</option>
-                                    <option value="hod" className="text-gray-900">Head of Department</option>
-                                    <option value="dean" className="text-gray-900">Dean</option>
-                                    <option value="sar" className="text-gray-900">Senior Assistant Registrar</option>
-                                    <option value="registrar" className="text-gray-900">Registrar</option>
-                                    <option value="admin" className="text-gray-900">Admin</option>
-                                </select>
-                            </div>
-
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center">
                                     <input
@@ -282,7 +256,7 @@ const App = () => {
 
                         <div className="mt-6 text-center pt-4 border-t border-gray-700">
                             <span className="text-gray-400 text-sm">New to UoK VMS? </span>
-                            <Link to="/signup.html" className="font-semibold text-[#F6DD26] hover:text-yellow-300 transition text-sm">
+                            <Link to="/signup" className="font-semibold text-[#F6DD26] hover:text-yellow-300 transition text-sm">
                                 Create an account
                             </Link>
                         </div>

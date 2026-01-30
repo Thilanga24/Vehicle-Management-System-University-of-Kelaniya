@@ -7,6 +7,7 @@ const VehicleReservation = () => {
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
+    const [successMessage, setSuccessMessage] = useState('');
     const [selectedVehicle, setSelectedVehicle] = useState(null);
     const [formData, setFormData] = useState({
         destination: '',
@@ -98,6 +99,18 @@ const VehicleReservation = () => {
 
     const prevStep = () => setCurrentStep(prev => prev - 1);
 
+    const getVehicleIcon = (type) => {
+        const t = type?.toLowerCase() || '';
+        if (t.includes('bus')) return 'fa-bus';
+        if (t.includes('ambulance')) return 'fa-ambulance';
+        if (t.includes('van')) return 'fa-shuttle-van';
+        if (t.includes('car')) return 'fa-car';
+        if (t.includes('cab')) return 'fa-taxi';
+        if (t.includes('lorry')) return 'fa-truck';
+        if (t.includes('three-wheeler')) return 'fa-motorcycle';
+        return 'fa-car';
+    };
+
     const submitReservation = async () => {
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
         const requesterId = currentUser.id;
@@ -114,6 +127,7 @@ const VehicleReservation = () => {
             destination: formData.destination,
             distance: formData.distance,
             passengers: formData.passengers,
+            emergency_contact: formData.emergency_contact,
             date: formData.date,
             time: formData.time,
             returnDate: formData.returnDate,
@@ -133,8 +147,8 @@ const VehicleReservation = () => {
             const data = await response.json();
 
             if (response.ok) {
-                alert('Reservation submitted successfully!');
-                navigate('/dashboard');
+                setSuccessMessage('Reservation submitted successfully! Redirecting to dashboard...');
+                setTimeout(() => navigate('/dashboard'), 3000);
             } else {
                 alert(`Error: ${data.message || 'Failed to submit reservation'}`);
             }
@@ -199,8 +213,16 @@ const VehicleReservation = () => {
                 </div>
 
                 <div className="content-area">
+                    {successMessage && (
+                        <div className="flex flex-col items-center justify-center p-12 bg-emerald-50 rounded-xl shadow-lg border border-emerald-100 text-center my-10 animate-fade-in-up">
+                            <i className="fas fa-check-circle text-6xl text-emerald-500 mb-6 animate-bounce"></i>
+                            <h2 className="text-3xl font-bold text-slate-800 mb-2">Success!</h2>
+                            <p className="text-lg text-slate-600 mb-6">{successMessage}</p>
+                            <p className="text-sm text-slate-400 font-medium">Redirecting to Dashboard...</p>
+                        </div>
+                    )}
                     {/* Step 1: Vehicle Selection */}
-                    {currentStep === 1 && (
+                    {currentStep === 1 && !successMessage && (
                         <div className="section">
                             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-6 text-white mb-6 shadow-lg">
                                 <h2 className="text-2xl font-bold mb-1">Available Vehicles</h2>
@@ -219,7 +241,7 @@ const VehicleReservation = () => {
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="flex items-center">
                                                 <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center mr-3 text-blue-600">
-                                                    <i className="fas fa-car"></i>
+                                                    <i className={`fas ${getVehicleIcon(vehicle.type)}`}></i>
                                                 </div>
                                                 <div>
                                                     <h3 className="font-bold text-slate-800">{vehicle.model}</h3>
@@ -252,7 +274,7 @@ const VehicleReservation = () => {
                     )}
 
                     {/* Step 2: Trip Details */}
-                    {currentStep === 2 && (
+                    {currentStep === 2 && !successMessage && (
                         <div className="section">
                             <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-lg p-6 text-white mb-6 shadow-lg">
                                 <h2 className="text-2xl font-bold mb-1">Trip Details</h2>
@@ -310,7 +332,7 @@ const VehicleReservation = () => {
                     )}
 
                     {/* Step 3: Review */}
-                    {currentStep === 3 && (
+                    {currentStep === 3 && !successMessage && (
                         <div className="section">
                             <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg p-6 text-white mb-6 shadow-lg">
                                 <h2 className="text-2xl font-bold mb-1">Review & Submit</h2>

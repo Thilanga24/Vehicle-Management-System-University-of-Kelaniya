@@ -8,6 +8,29 @@ const Dashboard = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [availabilityDate, setAvailabilityDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
+    const [reservations, setReservations] = useState([]);
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{"name": "Staff Member", "role": "staff"}');
+
+    const fetchReservations = async () => {
+        try {
+            const token = sessionStorage.getItem('authToken');
+            const response = await fetch('http://localhost:5000/api/reservations', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setReservations(data);
+            }
+        } catch (error) {
+            console.error('Error fetching reservations:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchReservations();
+    }, []);
 
     // Filter states
     const [vehicleStatusFilter, setVehicleStatusFilter] = useState('all');
@@ -174,8 +197,8 @@ const Dashboard = () => {
                 {/* Top Navigation */}
                 <div className="top-nav">
                     <div className="welcome">
-                        <h1>Good Morning, {JSON.parse(localStorage.getItem('currentUser') || '{}').name || 'Dr. Silva'} <i className="fas fa-hand-sparkles text-yellow-400 ml-2"></i></h1>
-                        <p>Welcome back to your vehicle management dashboard</p>
+                        <h1>Good Morning, {currentUser.name}! <i className="fas fa-hand-sparkles text-yellow-400 ml-2"></i></h1>
+                        <p>{currentUser.department || currentUser.faculty || 'University of Kelaniya'} | {currentUser.role.toUpperCase()}</p>
                     </div>
                     <div className="top-nav-right">
                         <div className="search-box">
@@ -188,11 +211,11 @@ const Dashboard = () => {
                         </div>
                         <div className="user-profile">
                             <div className="user-avatar">
-                                {JSON.parse(localStorage.getItem('currentUser') || '{}').name ? JSON.parse(localStorage.getItem('currentUser') || '{}').name.substring(0, 2).toUpperCase() : 'DS'}
+                                {currentUser.name.charAt(0).toUpperCase()}
                             </div>
                             <div className="user-info">
-                                <h4>{JSON.parse(localStorage.getItem('currentUser') || '{}').name || 'Dr. Silva'}</h4>
-                                <p>{sessionStorage.getItem('userRole') || 'Senior Lecturer'}</p>
+                                <h4>{currentUser.name}</h4>
+                                <p>{currentUser.role === 'staff' ? 'Academic/Staff' : currentUser.role.toUpperCase()}</p>
                             </div>
                         </div>
                     </div>
@@ -412,22 +435,23 @@ const Dashboard = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td><strong>REQ-2023-001</strong></td>
-                                            <td>2023-10-15</td>
-                                            <td>08:30 AM</td>
-                                            <td>Colombo Fort</td>
-                                            <td><span className="badge badge-success">Confirmed</span></td>
-                                            <td>Toyota Hiace (CAB-1234)</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>REQ-2023-005</strong></td>
-                                            <td>2023-10-20</td>
-                                            <td>02:00 PM</td>
-                                            <td>UGC Main Office</td>
-                                            <td><span className="badge badge-info">Driver Assigned</span></td>
-                                            <td>Honda Civic (CAA-5678)</td>
-                                        </tr>
+                                        {reservations.filter(r => r.requester_id === currentUser.id && r.status !== 'completed' && r.status !== 'rejected').map(r => (
+                                            <tr key={r.reservation_id}>
+                                                <td><strong>REQ-{r.reservation_id}</strong></td>
+                                                <td>{new Date(r.start_datetime).toLocaleDateString()}</td>
+                                                <td>{new Date(r.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                <td>{r.destination}</td>
+                                                <td>
+                                                    <span className={`badge ${r.status === 'approved' ? 'badge-success' : r.status === 'pending' ? 'badge-warning' : 'badge-info'}`}>
+                                                        {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
+                                                    </span>
+                                                </td>
+                                                <td>{r.model ? `${r.model} (${r.registration_number})` : 'To Be Assigned'}</td>
+                                            </tr>
+                                        ))}
+                                        {reservations.filter(r => r.requester_id === currentUser.id && r.status !== 'completed' && r.status !== 'rejected').length === 0 && (
+                                            <tr><td colSpan="6" className="text-center p-4 text-gray-500">No upcoming reservations found.</td></tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -454,19 +478,24 @@ const Dashboard = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td><strong>REQ-2023-008</strong></td>
-                                            <td>2023-10-25</td>
-                                            <td>Field Visit - Geography Dept</td>
-                                            <td><span className="badge badge-warning">HOD Review</span></td>
-                                            <td>2023-10-10</td>
-                                            <td>
-                                                <div className="action-btns">
-                                                    <button className="action-btn action-btn-view" title="View Details"><i className="fas fa-eye"></i></button>
-                                                    <button className="action-btn action-btn-delete" title="Cancel Request"><i className="fas fa-times"></i></button>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                        {reservations.filter(r => r.requester_id === currentUser.id && r.status === 'pending').map(r => (
+                                            <tr key={r.reservation_id}>
+                                                <td><strong>REQ-{r.reservation_id}</strong></td>
+                                                <td>{new Date(r.start_datetime).toLocaleDateString()}</td>
+                                                <td>{r.description || 'General Transport'}</td>
+                                                <td><span className="badge badge-warning">Pending Review</span></td>
+                                                <td>{new Date(r.created_at || Date.now()).toLocaleDateString()}</td>
+                                                <td>
+                                                    <div className="action-btns">
+                                                        <button className="action-btn action-btn-view" title="View Details"><i className="fas fa-eye"></i></button>
+                                                        <button className="action-btn action-btn-delete" title="Cancel Request"><i className="fas fa-times"></i></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {reservations.filter(r => r.requester_id === currentUser.id && r.status === 'pending').length === 0 && (
+                                            <tr><td colSpan="6" className="text-center p-4 text-gray-500">No pending approvals found.</td></tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -491,20 +520,24 @@ const Dashboard = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>2023-09-05</td>
-                                            <td>Kandy (Peradeniya Univ)</td>
-                                            <td>Toyota Coaster</td>
-                                            <td>Mr. Silva</td>
-                                            <td><span className="text-yellow-500"><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i></span></td>
-                                        </tr>
-                                        <tr>
-                                            <td>2023-08-12</td>
-                                            <td>Airport Drop</td>
-                                            <td>Honda Civic</td>
-                                            <td>Mr. Perera</td>
-                                            <td><span className="text-yellow-500"><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="far fa-star"></i></span></td>
-                                        </tr>
+                                        {reservations.filter(r => r.requester_id === currentUser.id && (r.status === 'completed' || r.status === 'rejected')).map(r => (
+                                            <tr key={r.reservation_id}>
+                                                <td>{new Date(r.start_datetime).toLocaleDateString()}</td>
+                                                <td>{r.destination}</td>
+                                                <td>{r.model || (r.status === 'rejected' ? 'N/A' : 'Unassigned')}</td>
+                                                <td>{/* Driver info not available in this fetch yet, use placeholder or extended fetch later */ "Assigned Driver"}</td>
+                                                <td>
+                                                    {r.status === 'rejected' ? (
+                                                        <span className="badge badge-danger">Rejected</span>
+                                                    ) : (
+                                                        <span className="text-yellow-500"><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i></span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {reservations.filter(r => r.requester_id === currentUser.id && (r.status === 'completed' || r.status === 'rejected')).length === 0 && (
+                                            <tr><td colSpan="5" className="text-center p-4 text-gray-500">No past booking history found.</td></tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </div>

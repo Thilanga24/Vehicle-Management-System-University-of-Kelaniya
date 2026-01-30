@@ -6,10 +6,9 @@ import db from '../config/db.js';
 export const getVehicles = async (req, res) => {
     try {
         const [vehicles] = await db.query(`
-            SELECT v.*, d.driver_id, u.first_name as driver_name 
+            SELECT v.*, d.driver_id, CONCAT(d.first_name, ' ', d.last_name) as driver_name 
             FROM vehicles v
             LEFT JOIN drivers d ON v.assigned_driver_id = d.driver_id
-            LEFT JOIN users u ON d.user_id = u.user_id
         `);
         res.json(vehicles);
     } catch (error) {
@@ -22,12 +21,12 @@ export const getVehicles = async (req, res) => {
 // @access  Private (Admin)
 export const addVehicle = async (req, res) => {
     console.log('Add Vehicle Request Body:', req.body);
-    const { registrationNumber, type, make, model, year, seatingCapacity, fuelType, status } = req.body;
+    const { registrationNumber, type, make, model, year, seatingCapacity, fuelType, status, driverId } = req.body;
 
     try {
         const [result] = await db.query(
-            'INSERT INTO vehicles (registration_number, type, make, model, year, seating_capacity, fuel_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [registrationNumber, type, make, model, year, seatingCapacity, fuelType, status || 'available']
+            'INSERT INTO vehicles (registration_number, type, make, model, year, seating_capacity, fuel_type, status, assigned_driver_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [registrationNumber, type, make, model, year, seatingCapacity, fuelType, status || 'available', driverId || null]
         );
         console.log('Vehicle Insert Result:', result);
         res.status(201).json({ message: 'Vehicle added', id: result.insertId });

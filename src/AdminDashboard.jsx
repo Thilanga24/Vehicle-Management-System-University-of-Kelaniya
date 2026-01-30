@@ -28,7 +28,7 @@ const AdminDashboard = () => {
     const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [user, setUser] = useState({ name: 'System Administrator', role: 'admin' });
+    const [user, setUser] = useState(JSON.parse(localStorage.getItem('currentUser') || '{"name": "Admin", "role": "admin"}'));
 
     // --- Mock Data ---
     const initialVehicles = [
@@ -197,12 +197,12 @@ const AdminDashboard = () => {
                             <div className="notification-badge">3</div>
                         </div>
                         <div className="user-profile">
-                            <div className="user-avatar">
-                                {user.name.substring(0, 2).toUpperCase()}
+                            <div className="user-avatar text-white">
+                                {user.name.charAt(0).toUpperCase()}
                             </div>
                             <div className="user-info">
                                 <h4>{user.name}</h4>
-                                <p>Administrator</p>
+                                <p>System Administrator</p>
                             </div>
                         </div>
                     </div>

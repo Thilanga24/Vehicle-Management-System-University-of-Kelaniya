@@ -10,53 +10,76 @@ const HODDashboard = () => {
     // HOD Specific State
     const [currentRequest, setCurrentRequest] = useState(null);
     const [approvalComments, setApprovalComments] = useState('');
+    const [user, setUser] = useState(JSON.parse(localStorage.getItem('currentUser') || '{"name": "HOD", "department": "Department"}'));
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState(null); // 'approval', 'report', 'calendar', 'history'
 
-    // Mock Data
-    const [pendingRequests, setPendingRequests] = useState([
-        {
-            id: 1,
-            lecturer: 'Dr. Silva',
-            destination: 'University of Jaffna',
-            date: '2025-10-15',
-            time: '08:00',
-            passengers: 5,
-            distance: 180,
-            purpose: 'Field visit for B.Sc. Computer Science students to observe data center operations',
-            submittedAt: '2 hours ago'
-        },
-        {
-            id: 2,
-            lecturer: 'Dr. Perera',
-            destination: 'Kandy Conference Center',
-            date: '2025-10-18',
-            time: '07:30',
-            passengers: 3,
-            distance: 120,
-            purpose: 'Attending International Conference on Computer Science and Technology',
-            submittedAt: '4 hours ago'
-        }
-    ]);
+    const [reservations, setReservations] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const [recentDecisions, setRecentDecisions] = useState([
-        {
-            id: 4,
-            lecturer: 'Dr. Jayawardena',
-            destination: 'Galle Tech Conference',
-            decision: 'approved',
-            date: '2025-10-12',
-            decidedAt: '1 day ago'
-        },
-        {
-            id: 5,
-            lecturer: 'Dr. Kumara',
-            destination: 'Matara Field Study',
-            decision: 'approved',
-            date: '2025-10-10',
-            decidedAt: '2 days ago'
+    const fetchReservations = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch('http://localhost:5000/api/reservations');
+            if (response.ok) {
+                const data = await response.json();
+                setReservations(data);
+            }
+        } catch (error) {
+            console.error('Error fetching reservations:', error);
+        } finally {
+            setLoading(false);
         }
-    ]);
+    };
+
+    useEffect(() => {
+        fetchReservations();
+
+        // Polling for new requests every 30 seconds
+        const interval = setInterval(fetchReservations, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Helper to format date/time from MySQL datetime
+    const formatDateTime = (dt) => {
+        if (!dt) return { date: 'N/A', time: 'N/A' };
+        const d = new Date(dt);
+        return {
+            date: d.toLocaleDateString(),
+            time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            relative: 'Just now' // Simplified for now
+        };
+    };
+
+    // Filtered lists for the HOD
+    const pendingRequests = reservations
+        .filter(r => r.status === 'pending')
+        .map(r => {
+            const dt = formatDateTime(r.start_datetime);
+            return {
+                id: r.reservation_id,
+                lecturer: `${r.first_name || ''} ${r.last_name || 'Staff'}`,
+                destination: r.destination,
+                date: dt.date,
+                time: dt.time,
+                passengers: r.passengers_count,
+                distance: r.distance_km,
+                purpose: r.description,
+                submittedAt: new Date(r.created_at).toLocaleDateString()
+            };
+        });
+
+    const recentDecisions = reservations
+        .filter(r => r.hod_approval_status !== 'pending')
+        .slice(0, 5)
+        .map(r => ({
+            id: r.reservation_id,
+            lecturer: `${r.first_name || ''} ${r.last_name || 'Staff'}`,
+            destination: r.destination,
+            decision: r.hod_approval_status,
+            date: new Date(r.start_datetime).toLocaleDateString(),
+            decidedAt: 'Recently'
+        }));
 
     const handleLogout = () => {
         sessionStorage.clear();
@@ -82,46 +105,76 @@ const HODDashboard = () => {
         }
     };
 
-    const processApproval = (decision, comments = '') => {
+    const processApproval = async (decision, comments = '') => {
         if (!currentRequest) return;
 
-        const updatedPending = pendingRequests.filter(req => req.id !== currentRequest.id);
-        setPendingRequests(updatedPending);
+        try {
+            const response = await fetch(`http://localhost:5000/api/reservations/${currentRequest.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: decision,
+                    level: 'hod',
+                    comments: comments
+                })
+            });
 
-        const newDecision = {
-            id: currentRequest.id,
-            lecturer: currentRequest.lecturer,
-            destination: currentRequest.destination,
-            decision: decision,
-            date: currentRequest.date,
-            decidedAt: 'Just now',
-            reason: decision === 'rejected' ? comments : undefined
-        };
-        setRecentDecisions([newDecision, ...recentDecisions]);
+            if (response.ok) {
+                alert(`Request ${decision} successfully!`);
+                fetchReservations(); // Refresh data
+            } else {
+                alert('Failed to update status');
+            }
+        } catch (error) {
+            console.error('Approval Error:', error);
+            alert('Error processing approval');
+        }
 
         setShowModal(false);
         setCurrentRequest(null);
         setApprovalComments('');
-        alert(`Request ${decision} successfully!`);
     };
 
-    const quickApprove = (requestId) => {
+    const quickApprove = async (requestId) => {
         if (window.confirm('Do you want to Quick Approve this request?')) {
-            const request = pendingRequests.find(req => req.id === requestId);
-            if (request) {
-                setPendingRequests(pendingRequests.filter(r => r.id !== request.id));
-                setRecentDecisions([{ ...request, decision: 'approved', decidedAt: 'Just now' }, ...recentDecisions]);
+            try {
+                const response = await fetch(`http://localhost:5000/api/reservations/${requestId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: 'approved',
+                        level: 'hod'
+                    })
+                });
+                if (response.ok) {
+                    alert('Request approved!');
+                    fetchReservations();
+                }
+            } catch (error) {
+                console.error('Quick approve error:', error);
             }
         }
     };
 
-    const quickReject = (requestId) => {
+    const quickReject = async (requestId) => {
         const reason = prompt("Reason for rejection:");
         if (reason) {
-            const request = pendingRequests.find(req => req.id === requestId);
-            if (request) {
-                setPendingRequests(pendingRequests.filter(r => r.id !== request.id));
-                setRecentDecisions([{ ...request, decision: 'rejected', decidedAt: 'Just now' }, ...recentDecisions]);
+            try {
+                const response = await fetch(`http://localhost:5000/api/reservations/${requestId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: 'rejected',
+                        level: 'hod',
+                        comments: reason
+                    })
+                });
+                if (response.ok) {
+                    alert('Request rejected');
+                    fetchReservations();
+                }
+            } catch (error) {
+                console.error('Quick reject error:', error);
             }
         }
     };
@@ -189,11 +242,11 @@ const HODDashboard = () => {
                             </button>
                             <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
                                 <div className="text-right hidden md:block">
-                                    <p className="text-sm font-bold text-slate-800">Department Head</p>
-                                    <p className="text-xs text-slate-500">Computer Science</p>
+                                    <p className="text-sm font-bold text-slate-800">{user.name}</p>
+                                    <p className="text-xs text-slate-500">{user.department}</p>
                                 </div>
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#660000] to-[#800000] flex items-center justify-center text-[#F6DD26] font-bold border-2 border-[#F6DD26] shadow-sm">
-                                    H
+                                    {user.name.charAt(0)}
                                 </div>
                             </div>
                             <button onClick={toggleSidebar} className="lg:hidden p-2 text-gray-500 hover:text-gray-800">
@@ -209,8 +262,8 @@ const HODDashboard = () => {
                             {/* Welcome Banner */}
                             <div className="bg-gradient-to-r from-[#660000] to-[#800000] rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
                                 <div className="relative z-10">
-                                    <h1 className="text-3xl font-bold mb-2">Welcome Back, Head of Department!</h1>
-                                    <p className="text-yellow-100 text-lg opacity-90">Manage your department's fleet requests efficiently.</p>
+                                    <h1 className="text-3xl font-bold mb-2">Welcome Back, {user.name}!</h1>
+                                    <p className="text-yellow-100 text-lg opacity-90">{user.department} Department</p>
                                     <div className="mt-6 flex items-center text-sm text-[#F6DD26] bg-black/20 w-fit px-4 py-2 rounded-lg backdrop-blur-sm border border-[#F6DD26]/20">
                                         <i className="far fa-clock mr-2"></i>
                                         Last login: Today at 8:45 AM

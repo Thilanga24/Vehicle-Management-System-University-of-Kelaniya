@@ -6,15 +6,24 @@ const UserManagement = () => {
     const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState('user-list');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [users, setUsers] = useState([]);
 
-    // Sample Data
-    const users = [
-        { id: 1, name: 'Dr. Saman Silva', email: 'saman.silva@uni.lk', empId: 'EMP001', phone: '+94 11 234 5678', role: 'admin', department: 'Administration', position: 'System Administrator', status: 'active', lastLogin: '2024-10-14 09:30' },
-        { id: 2, name: 'Prof. Nimal Perera', email: 'nimal.perera@uni.lk', empId: 'EMP002', phone: '+94 11 345 6789', role: 'dean', department: 'Engineering', position: 'Dean', status: 'active', lastLogin: '2024-10-14 08:15' },
-        { id: 3, name: 'Dr. Kamala Fernando', email: 'kamala.fernando@uni.lk', empId: 'EMP003', phone: '+94 11 456 7890', role: 'hod', department: 'Computer Science', position: 'Head of Department', status: 'active', lastLogin: '2024-10-13 16:45' },
-        { id: 4, name: 'Mr. Ruwan Kumara', email: 'ruwan.kumara@uni.lk', empId: 'EMP004', phone: '+94 11 567 8901', role: 'lecturer', department: 'Computer Science', position: 'Senior Lecturer', status: 'active', lastLogin: '2024-10-14 07:20' },
-        { id: 5, name: 'Ms. Dilini Rajapakse', email: 'dilini.rajapakse@uni.lk', empId: 'EMP005', phone: '+94 11 678 9012', role: 'sar', department: 'Administration', position: 'Student Affairs Officer', status: 'pending', lastLogin: 'Never' }
-    ];
+    // Fetch users from backend
+    const fetchUsers = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/auth/users');
+            const data = await response.json();
+            if (response.ok) {
+                setUsers(data);
+            }
+        } catch (error) {
+            console.error('Error fetching users:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
 
     const departments = [
         { name: 'Computer Science', head: 'Dr. Kamala Fernando', staff: 15, students: 450, budget: 'Rs. 2.5M' },
@@ -23,19 +32,6 @@ const UserManagement = () => {
         { name: 'Arts & Humanities', head: 'Prof. Sandya Jayawardene', staff: 18, students: 520, budget: 'Rs. 2.1M' },
         { name: 'Applied Sciences', head: 'Dr. Mahesh Bandara', staff: 20, students: 480, budget: 'Rs. 3.0M' }
     ];
-
-    const activityLogs = [
-        { timestamp: '2024-10-14 09:30:15', user: 'Dr. Saman Silva', activity: 'System Login', ip: '192.168.1.100', status: 'Success' },
-        { timestamp: '2024-10-14 09:25:42', user: 'Mr. Ruwan Kumara', activity: 'Vehicle Reservation', ip: '192.168.1.105', status: 'Success' },
-        { timestamp: '2024-10-14 09:20:18', user: 'Dr. Kamala Fernando', activity: 'Approval Action', ip: '192.168.1.102', status: 'Success' },
-    ];
-
-    useEffect(() => {
-        const isLoggedIn = sessionStorage.getItem('isLoggedIn');
-        if (!isLoggedIn) {
-            // navigate('/');
-        }
-    }, [navigate]);
 
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -152,21 +148,23 @@ const UserManagement = () => {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {users.map(user => (
-                                            <tr key={user.id} className="hover:bg-slate-50">
+                                            <tr key={user.user_id} className="hover:bg-slate-50">
                                                 <td className="p-4">
-                                                    <div className="font-medium text-slate-800">{user.name}</div>
-                                                    <div className="text-xs text-slate-500">{user.empId}</div>
+                                                    <div className="font-medium text-slate-800">{user.first_name} {user.last_name}</div>
+                                                    <div className="text-xs text-slate-500">ID: {user.user_id}</div>
                                                 </td>
                                                 <td className="p-4">
                                                     <span className={`${getRoleBadgeColor(user.role)} text-white text-xs px-2 py-1 rounded-full shadow-sm`}>
-                                                        {user.role.toUpperCase()}
+                                                        {user.role ? user.role.toUpperCase() : 'UNKNOWN'}
                                                     </span>
                                                 </td>
-                                                <td className="p-4 text-slate-600">{user.department}</td>
+                                                <td className="p-4 text-slate-600">
+                                                    {user.department || user.faculty || '-'}
+                                                </td>
                                                 <td className="p-4 text-slate-600">{user.email}</td>
                                                 <td className="p-4">
-                                                    <span className={`px-2 py-1 rounded text-xs text-white ${user.status === 'active' ? 'bg-emerald-500' : 'bg-slate-400'}`}>
-                                                        {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                                                    <span className="px-2 py-1 rounded text-xs text-white bg-emerald-500">
+                                                        Active
                                                     </span>
                                                 </td>
                                                 <td className="p-4">
@@ -188,7 +186,7 @@ const UserManagement = () => {
                         <div className="section">
                             <div className="section-header"><h2>Add New User</h2></div>
                             <div className="bg-white rounded-xl shadow-md p-8 border border-slate-100">
-                                <form className="space-y-6">
+                                <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); alert("Admin user creation not fully connected to backend yet."); }}>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>

@@ -6,101 +6,70 @@ const DeanDashboard = () => {
     const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [user, setUser] = useState({ name: 'Prof. Rajapaksa', role: 'Dean - Faculty of Science' });
+    const [user, setUser] = useState(JSON.parse(localStorage.getItem('currentUser') || '{"name": "Dean", "faculty": "Faculty"}'));
     const [currentTime, setCurrentTime] = useState('');
 
     // --- State for Data ---
-    const [pendingRequests, setPendingRequests] = useState([
-        {
-            id: 'REQ-201',
-            lecturer: 'Dr. Silva',
-            department: 'Computer Science',
-            destination: 'University of Jaffna',
-            date: '2025-10-15',
-            time: '08:00',
-            passengers: 5,
-            distance: 180,
-            purpose: 'Field visit for B.Sc. Computer Science students',
-            submittedAt: '2 hours ago',
-            hodApproval: 'approved',
-            hodComments: 'Important educational visit',
-            vehicleType: 'Van'
-        },
-        {
-            id: 'REQ-202',
-            lecturer: 'Prof. Fernando',
-            department: 'Physics',
-            destination: 'CERN Research Center',
-            date: '2025-10-20',
-            time: '06:00',
-            passengers: 8,
-            distance: 250,
-            purpose: 'International physics conference',
-            submittedAt: '5 hours ago',
-            hodApproval: 'approved',
-            hodComments: 'Critical for department research',
-            vehicleType: 'Bus'
-        },
-        {
-            id: 'REQ-203',
-            lecturer: 'Dr. Perera',
-            department: 'Mathematics',
-            destination: 'Kandy Conference Center',
-            date: '2025-10-18',
-            time: '07:30',
-            passengers: 3,
-            distance: 120,
-            purpose: 'International Mathematics Conference',
-            submittedAt: '1 day ago',
-            hodApproval: 'approved',
-            hodComments: 'Approved with conditions',
-            vehicleType: 'Car'
-        },
-        {
-            id: 'REQ-204',
-            lecturer: 'Dr. Kumara',
-            department: 'Chemistry',
-            destination: 'Industrial Visit - Colombo',
-            date: '2025-10-22',
-            time: '08:30',
-            passengers: 12,
-            distance: 95,
-            purpose: 'Industrial chemistry lab visit for undergraduate students',
-            submittedAt: '1 day ago',
-            hodApproval: 'approved',
-            hodComments: 'Excellent learning opportunity',
-            vehicleType: 'Bus'
-        }
-    ]);
+    const [reservations, setReservations] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const [recentDecisions, setRecentDecisions] = useState([
-        {
-            id: 'REQ-199',
-            lecturer: 'Dr. Jayawardena',
-            department: 'Physics',
-            destination: 'Galle Tech Conference',
-            decision: 'approved',
-            date: '2025-10-12',
-            decidedAt: '1 day ago'
-        },
-        {
-            id: 'REQ-198',
-            lecturer: 'Dr. Ranasinghe',
-            department: 'Chemistry',
-            destination: 'Research Collaboration',
-            decision: 'approved',
-            date: '2025-10-10',
-            decidedAt: '2 days ago'
+    const fetchReservations = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch('http://localhost:5000/api/reservations');
+            if (response.ok) {
+                const data = await response.json();
+                setReservations(data);
+            }
+        } catch (error) {
+            console.error('Error fetching reservations:', error);
+        } finally {
+            setLoading(false);
         }
-    ]);
+    };
+
+    useEffect(() => {
+        fetchReservations();
+        const interval = setInterval(fetchReservations, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Filtered lists for the Dean
+    const pendingRequests = reservations
+        .filter(r => r.status === 'pending_dean')
+        .map(r => ({
+            id: r.reservation_id,
+            lecturer: `${r.first_name || ''} ${r.last_name || 'Staff'}`,
+            department: r.department || 'N/A',
+            destination: r.destination,
+            date: new Date(r.start_datetime).toLocaleDateString(),
+            time: new Date(r.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            passengers: r.passengers_count,
+            distance: r.distance_km,
+            purpose: r.description,
+            submittedAt: new Date(r.created_at).toLocaleDateString(),
+            hodApproval: r.hod_approval_status,
+            hodComments: 'Forwarded by HOD',
+            vehicleType: r.vehicle_id ? 'Assigned' : 'Needs Assignment'
+        }));
+
+    const recentDecisions = reservations
+        .filter(r => r.dean_approval_status !== 'pending')
+        .slice(0, 5)
+        .map(r => ({
+            id: r.reservation_id,
+            lecturer: `${r.first_name || ''} ${r.last_name || 'Staff'}`,
+            department: r.department,
+            destination: r.destination,
+            decision: r.dean_approval_status,
+            date: new Date(r.start_datetime).toLocaleDateString(),
+            decidedAt: 'Recently'
+        }));
 
     const departmentStats = [
-        { department: 'Industrial Management', pending: 1, thisMonth: 8 },
-        { department: 'Physics', pending: 1, thisMonth: 5 },
-        { department: 'Mathematics', pending: 1, thisMonth: 6 },
-        { department: 'Chemistry', pending: 1, thisMonth: 7 },
-        { department: 'Zoology', pending: 0, thisMonth: 4 },
-        { department: 'Statistics', pending: 0, thisMonth: 2 }
+        { department: 'Computer Science', pending: pendingRequests.length, thisMonth: reservations.length },
+        { department: 'Physics', pending: 0, thisMonth: 0 },
+        { department: 'Chemistry', pending: 0, thisMonth: 0 }
     ];
 
     // --- Modal State ---
@@ -139,27 +108,34 @@ const DeanDashboard = () => {
         setShowModal(true);
     };
 
-    const processApproval = (decision) => {
+    const processApproval = async (decision) => {
         if (!selectedRequest) return;
 
-        const updatedPending = pendingRequests.filter(req => req.id !== selectedRequest.id);
-        setPendingRequests(updatedPending);
+        try {
+            const response = await fetch(`http://localhost:5000/api/reservations/${selectedRequest.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: decision,
+                    level: 'dean',
+                    comments: deanComment
+                })
+            });
 
-        const newDecision = {
-            ...selectedRequest,
-            decision: decision,
-            decidedAt: 'Just now',
-            deanComment: deanComment
-        };
-
-        setRecentDecisions([newDecision, ...recentDecisions]);
-
-        // Custom message logic
-        let message = `Request ${selectedRequest.id} ${decision === 'approved' ? 'Approved' : 'Rejected'}.`;
-        if (decision === 'approved' && selectedRequest.distance > 100) {
-            message += ' Forwarded to SAR/Registrar (Distance > 100km).';
+            if (response.ok) {
+                let message = `Request ${selectedRequest.id} ${decision === 'approved' ? 'Approved' : 'Rejected'}.`;
+                if (decision === 'approved' && selectedRequest.distance > 100) {
+                    message += ' Forwarded to SAR/Registrar (Distance > 100km).';
+                }
+                alert(message);
+                fetchReservations();
+            } else {
+                alert('Failed to update status');
+            }
+        } catch (error) {
+            console.error('Approval Error:', error);
+            alert('Error processing approval');
         }
-        alert(message);
 
         setShowModal(false);
         setSelectedRequest(null);
@@ -273,8 +249,8 @@ const DeanDashboard = () => {
                         <div className="animation-fade-in space-y-8">
                             <div className="bg-gradient-to-r from-[#660000] to-[#800000] rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
                                 <div className="relative z-10">
-                                    <h1 className="text-3xl font-bold mb-2">Welcome, {user.name}!</h1>
-                                    <p className="text-yellow-100 text-lg opacity-90">{user.role}</p>
+                                    <h1 className="text-3xl font-bold mb-2">Welcome Back, {user.name}!</h1>
+                                    <p className="text-yellow-100 text-lg opacity-90">{user.faculty} | Dean</p>
                                 </div>
                                 <div className="absolute right-0 top-0 h-full w-1/3 bg-white/5 skew-x-[-20deg]"></div>
                             </div>

@@ -35,17 +35,11 @@ const VehicleManagement = () => {
 
     const [vehicles, setVehicles] = useState([]);
     const [editingId, setEditingId] = useState(null);
+    const [driversList, setDriversList] = useState([]);
     const [formData, setFormData] = useState({
-        type: '',
-        registrationNumber: '',
-        make: '',
-        model: '',
-        year: '',
-        seatingCapacity: '',
-        fuelType: '',
-        mileage: '',
-        status: 'available',
-        notes: ''
+        type: '', registrationNumber: '', make: '', model: '', year: '',
+        seatingCapacity: '', fuelType: '', mileage: '', status: 'available',
+        driverId: '', notes: ''
     });
 
     const [notification, setNotification] = useState({ message: '', type: '', visible: false });
@@ -54,6 +48,19 @@ const VehicleManagement = () => {
     const showNotification = (message, type = 'success') => {
         setNotification({ message, type, visible: true });
         setTimeout(() => setNotification((prev) => ({ ...prev, visible: false })), 3000);
+    };
+
+    // Fetch drivers for dropdown
+    const fetchDrivers = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/drivers');
+            const data = await response.json();
+            if (response.ok) {
+                setDriversList(data);
+            }
+        } catch (error) {
+            console.error("Error fetching drivers:", error);
+        }
     };
 
     // Fetch vehicles from backend
@@ -71,6 +78,7 @@ const VehicleManagement = () => {
                     seats: v.seating_capacity,
                     status: v.status,
                     driver: v.driver_name || 'Unassigned',
+                    driverId: v.driver_id, // Store ID for editing
                     fuelType: v.fuel_type,
                     year: v.year,
                     mileage: v.current_mileage || 0
@@ -85,6 +93,7 @@ const VehicleManagement = () => {
 
     useEffect(() => {
         fetchVehicles();
+        fetchDrivers();
     }, []);
 
     const handleInputChange = (e) => {
@@ -103,7 +112,8 @@ const VehicleManagement = () => {
             fuelType: vehicle.fuelType,
             mileage: vehicle.mileage,
             status: vehicle.status,
-            notes: '' // Ideally fetch this too if available
+            driverId: vehicle.driverId || '',
+            notes: ''
         });
         setActiveSection('add-vehicle');
     };
@@ -127,7 +137,7 @@ const VehicleManagement = () => {
                 showNotification(editingId ? "Vehicle Updated Successfully!" : "Vehicle Added Successfully!", "success");
                 setFormData({
                     type: '', registrationNumber: '', make: '', model: '', year: '',
-                    seatingCapacity: '', fuelType: '', mileage: '', status: 'available', notes: ''
+                    seatingCapacity: '', fuelType: '', mileage: '', status: 'available', driverId: '', notes: ''
                 });
                 setEditingId(null);
                 fetchVehicles(); // Refresh list
@@ -319,7 +329,12 @@ const VehicleManagement = () => {
                                         <option value="">All Types</option>
                                         <option value="Car">Car</option>
                                         <option value="Van">Van</option>
-                                        <option value="Bus">Bus</option>
+                                        <option value="Bus (Standard)">Bus (Standard)</option>
+                                        <option value="Bus (Rosa)">Bus (Rosa)</option>
+                                        <option value="Cab">Cab</option>
+                                        <option value="Lorry">Lorry</option>
+                                        <option value="Three-wheeler">Three-wheeler</option>
+                                        <option value="Ambulance">Ambulance</option>
                                     </select>
                                 </div>
                             </div>
@@ -387,7 +402,12 @@ const VehicleManagement = () => {
                                                 <option value="">Select Type</option>
                                                 <option value="Car">Car</option>
                                                 <option value="Van">Van</option>
-                                                <option value="Bus">Bus</option>
+                                                <option value="Bus (Standard)">Bus (Standard)</option>
+                                                <option value="Bus (Rosa)">Bus (Rosa)</option>
+                                                <option value="Cab">Cab</option>
+                                                <option value="Lorry">Lorry</option>
+                                                <option value="Three-wheeler">Three-wheeler</option>
+                                                <option value="Ambulance">Ambulance</option>
                                             </select>
                                         </div>
                                         <div>
@@ -463,6 +483,22 @@ const VehicleManagement = () => {
                                                 <option value="Petrol">Petrol</option>
                                                 <option value="Diesel">Diesel</option>
                                                 <option value="Hybrid">Hybrid</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Assign Driver</label>
+                                            <select
+                                                name="driverId"
+                                                value={formData.driverId}
+                                                onChange={handleInputChange}
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all"
+                                            >
+                                                <option value="">Select Driver (Optional)</option>
+                                                {driversList.map(driver => (
+                                                    <option key={driver.driver_id} value={driver.driver_id}>
+                                                        {driver.first_name} {driver.last_name}
+                                                    </option>
+                                                ))}
                                             </select>
                                         </div>
                                         <div>

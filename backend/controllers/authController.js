@@ -27,13 +27,7 @@ export const registerUser = async (req, res) => {
 
         const userId = result.insertId;
 
-        // If driver, insert into drivers table
-        if (role === 'driver') {
-            await db.query(
-                'INSERT INTO drivers (user_id, nic, license_number, license_type, license_expiry_date) VALUES (?, ?, ?, ?, ?)',
-                [userId, nic, licenseNumber, licenseType, licenseExpiryDate]
-            );
-        }
+
 
         res.status(201).json({ message: 'User registered successfully' });
 
@@ -88,5 +82,18 @@ export const loginUser = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Get all users (excluding drivers)
+// @route   GET /api/auth/users
+// @access  Private (Admin)
+export const getUsers = async (req, res) => {
+    try {
+        const [users] = await db.query("SELECT user_id, first_name, last_name, email, role, department, faculty, phone_number, created_at FROM users WHERE role != 'driver' ORDER BY created_at DESC");
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };

@@ -34,6 +34,12 @@ const Signup = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [passwordStrength, setPasswordStrength] = useState(0);
+    const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+
+    const showNotification = (message, type = 'success') => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => setNotification({ show: false, message: '', type: '' }), 5000);
+    };
 
     const checkPasswordStrength = (pass) => {
         let strength = 0;
@@ -58,11 +64,10 @@ const Signup = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (formData.password !== formData.confirmPassword) {
-            alert('Passwords do not match!');
+            showNotification('Passwords do not match!', 'error');
             return;
         }
 
-        setIsSubmitting(true);
         setIsSubmitting(true);
         try {
             const response = await fetch('http://localhost:5000/api/auth/register', {
@@ -76,14 +81,14 @@ const Signup = () => {
             const data = await response.json();
 
             if (response.ok) {
-                alert('Account created successfully! You can now log in.');
-                navigate('/');
+                showNotification(data.message || 'Account created successfully! You can now log in.', 'success');
+                setTimeout(() => navigate('/'), 2000);
             } else {
-                alert(data.message || 'Registration failed. Please try again.');
+                showNotification(data.message || 'Registration failed. Please try again.', 'error');
             }
         } catch (error) {
             console.error('Registration Error:', error);
-            alert('An error occurred. Please check your connection and try again.');
+            showNotification('An error occurred. Please check your connection and try again.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -178,6 +183,14 @@ const Signup = () => {
 
                 <div className="w-full max-w-xl relative z-10">
                     <div className="login-card rounded-2xl card-shadow p-6 sm:p-10 border border-[#F6DD26]/20">
+                        {notification.show && (
+                            <div className={`mb-6 p-4 rounded-lg flex items-center justify-between ${notification.type === 'success' ? 'bg-green-900/50 text-green-200 border border-green-800' : 'bg-red-900/50 text-red-200 border border-red-800'}`}>
+                                <span className="text-sm font-medium">{notification.message}</span>
+                                <button onClick={() => setNotification({ ...notification, show: false })} className="hover:text-white transition-colors">
+                                    <FontAwesomeIcon icon={faTimes} />
+                                </button>
+                            </div>
+                        )}
                         <div className="text-center mb-8">
                             <h2 className="text-3xl font-bold !text-white mb-2" style={{ color: 'white' }}>Create Account</h2>
                             <p className="text-gray-300">Join the University Transportation System</p>
@@ -290,11 +303,41 @@ const Signup = () => {
                                                 className="input-field block w-full px-3 py-3 rounded-lg focus:ring-2 focus:ring-[#F6DD26] transition"
                                             >
                                                 <option value="">Select Department</option>
-                                                <option value="cs">Computer Science</option>
-                                                <option value="math">Mathematics</option>
-                                                <option value="physics">Physics</option>
-                                                <option value="chemistry">Chemistry</option>
-                                                <option value="biology">Biology</option>
+                                                <option value="Accountancy">Accountancy</option>
+                                                <option value="Archaeology">Archaeology</option>
+                                                <option value="Botany">Botany / Plant and Molecular Biology</option>
+                                                <option value="Chemistry">Chemistry</option>
+                                                <option value="Commerce_Financial_Management">Commerce & Financial Management</option>
+                                                <option value="Drama_Cinema_Television">Drama, Cinema and Television</option>
+                                                <option value="Economics">Economics</option>
+                                                <option value="English">English</option>
+                                                <option value="English_Language_Teaching">English Language Teaching</option>
+                                                <option value="Finance">Finance</option>
+                                                <option value="Fine_Arts">Fine Arts</option>
+                                                <option value="Geography">Geography</option>
+                                                <option value="Hindi_Studies">Hindi Studies</option>
+                                                <option value="History">History</option>
+                                                <option value="Human_Resource_Management">Human Resource Management</option>
+                                                <option value="Industrial_Management">Industrial Management</option>
+                                                <option value="International_Studies">International Studies</option>
+                                                <option value="Library_Information_Science">Library and Information Science</option>
+                                                <option value="Linguistics">Linguistics</option>
+                                                <option value="Marketing_Management">Marketing Management</option>
+                                                <option value="Mathematics">Mathematics</option>
+                                                <option value="Microbiology">Microbiology</option>
+                                                <option value="Modern_Languages">Modern Languages (Chinese, French, German, Japanese, Korean, Russian)</option>
+                                                <option value="Pali_Buddhist_Studies">Pali & Buddhist Studies</option>
+                                                <option value="Philosophy">Philosophy</option>
+                                                <option value="Physics_Electronics">Physics and Electronics</option>
+                                                <option value="Political_Science">Political Science</option>
+                                                <option value="Sanskrit_Eastern_Studies">Sanskrit and Eastern Studies</option>
+                                                <option value="Sinhala">Sinhala</option>
+                                                <option value="Social_Statistics">Social Statistics</option>
+                                                <option value="Sociology">Sociology</option>
+                                                <option value="Sport_Science_Physical_Education">Sport Science and Physical Education</option>
+                                                <option value="Statistics_Computer_Science">Statistics and Computer Science</option>
+                                                <option value="Western_Classical_Culture">Western Classical Culture & Christian Culture</option>
+                                                <option value="Zoology_Environmental_Management">Zoology and Environmental Management</option>
                                             </select>
                                         </div>
                                     )
