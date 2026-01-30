@@ -4,22 +4,55 @@ import db from '../config/db.js';
 // @route   POST /api/reservations
 // @access  Private
 export const createReservation = async (req, res) => {
-    const { requesterId, destination, distance, passengers, date, time, returnDate, returnTime, purpose, vehicleId } = req.body;
+    const {
+        requesterId,
+        destination,
+        distance,
+        passengers,
+        date,
+        time,
+        returnDate,
+        returnTime,
+        purpose,
+        vehicleId,
+        reservationType, // 'emergency' or 'normal'
+        natureOfEmergency
+    } = req.body;
 
-    // Combine date+time if needed, or store separate as in schema.
-    // Schema had start_datetime and end_datetime
-    const startDatetime = `${date} ${time}`;
-    const endDatetime = `${returnDate} ${returnTime}`;
+    // Helper to format DateTime for MySQL
+    const formatDateTime = (d, t) => {
+        if (!d || !t) return new Date();
+        const timePart = t.length === 5 ? `${t}:00` : t; // Ensure HH:MM:SS
+        return `${d} ${timePart}`;
+    };
+
+    const startDatetime = (date && time) ? formatDateTime(date, time) : new Date();
+    const endDatetime = (returnDate && returnTime) ? formatDateTime(returnDate, returnTime) : null;
+
+    let finalDescription = purpose;
+    if (reservationType === 'emergency') {
+        finalDescription = `[EMERGENCY - ${natureOfEmergency}] ${purpose}`;
+    }
 
     try {
         await db.query(
             `INSERT INTO reservations (requester_id, vehicle_id, destination, distance_km, passengers_count, start_datetime, end_datetime, description, status)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-            [requesterId, vehicleId, destination, distance, passengers, startDatetime, endDatetime, purpose]
+            [
+                requesterId,
+                vehicleId || null,
+                destination || 'Unspecified',
+                parseFloat(distance) || 0,
+                parseInt(passengers) || 1,
+                startDatetime,
+                endDatetime,
+                finalDescription
+            ]
         );
         res.status(201).json({ message: 'Reservation created' });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error('Create Reservation Error:', error);
+        res.status(500).json({ message: 'Failed to create reservation', error: error.sqlMessage || error.message });
     }
 };
 

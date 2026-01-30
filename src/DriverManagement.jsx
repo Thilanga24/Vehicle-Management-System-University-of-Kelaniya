@@ -7,16 +7,120 @@ const DriverManagement = () => {
     const [activeSection, setActiveSection] = useState('driver-list');
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    // --- Sample Data ---
-    const initialDrivers = [
-        { id: 1, name: 'Mr. Perera', nic: '750123456V', phone: '+94 77 123 4567', email: 'perera@uni.lk', license: 'B0123456', licenseType: 'Both', status: 'active', experience: 15, rating: 4.8, assignedVehicle: 'KI-1234' },
-        { id: 2, name: 'Mr. Fernando', nic: '820456789V', phone: '+94 77 234 5678', email: 'fernando@uni.lk', license: 'B0234567', licenseType: 'Heavy', status: 'active', experience: 12, rating: 4.6, assignedVehicle: 'KI-5678' },
-        { id: 3, name: 'Mr. Silva', nic: '790789123V', phone: '+94 77 345 6789', email: 'silva@uni.lk', license: 'B0345678', licenseType: 'Light', status: 'on-leave', experience: 8, rating: 4.2, assignedVehicle: null },
-        { id: 4, name: 'Mr. Kumara', nic: '850012345V', phone: '+94 77 456 7890', email: 'kumara@uni.lk', license: 'B0456789', licenseType: 'Heavy', status: 'active', experience: 20, rating: 4.9, assignedVehicle: 'KI-3456' },
-        { id: 5, name: 'Mr. Ranasinghe', nic: '880654321V', phone: '+94 77 567 8901', email: 'ranasinghe@uni.lk', license: 'B0567890', licenseType: 'Light', status: 'active', experience: 5, rating: 4.0, assignedVehicle: 'KI-7890' }
-    ];
+    const [drivers, setDrivers] = useState([]);
+    const [editingId, setEditingId] = useState(null);
+    const [formData, setFormData] = useState({
+        firstName: '', lastName: '', phone: '', nic: '', address: '',
+        licenseNumber: '', licenseType: '', licenseExpiry: '', experience: '', status: 'active'
+    });
 
-    const [drivers, setDrivers] = useState(initialDrivers);
+    const [notification, setNotification] = useState({ message: '', type: '', visible: false });
+
+    // Notification Helper
+    const showNotification = (message, type = 'success') => {
+        setNotification({ message, type, visible: true });
+        setTimeout(() => setNotification((prev) => ({ ...prev, visible: false })), 3000);
+    };
+
+    // Fetch drivers
+    const fetchDrivers = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/drivers');
+            const data = await response.json();
+            console.log('Fetched Drivers:', data);
+            if (response.ok) {
+                const mappedDrivers = data.map(d => ({
+                    id: d.driver_id,
+                    name: `${d.first_name} ${d.last_name}`,
+                    firstName: d.first_name,
+                    lastName: d.last_name,
+                    email: d.email,
+                    phone: d.phone_number,
+                    nic: d.nic,
+                    address: d.address,
+                    license: d.license_number,
+                    licenseType: d.license_type,
+                    licenseExpiry: d.license_expiry_date ? d.license_expiry_date.split('T')[0] : '',
+                    experience: d.years_of_experience,
+                    rating: d.rating || 5.0,
+                    status: d.status,
+                    assignedVehicle: 'Not Assigned' // Logic to be added later
+                }));
+                setDrivers(mappedDrivers);
+            }
+        } catch (error) {
+            console.error('Error fetching drivers:', error);
+            showNotification('Failed to fetch drivers', 'error');
+        }
+    };
+
+    useEffect(() => {
+        fetchDrivers();
+    }, []);
+
+    const handleInputChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleEdit = (driver) => {
+        setEditingId(driver.id);
+        setFormData({
+            firstName: driver.firstName,
+            lastName: driver.lastName,
+            phone: driver.phone,
+            nic: driver.nic,
+            address: driver.address,
+            licenseNumber: driver.license,
+            licenseType: driver.licenseType,
+            licenseExpiry: driver.licenseExpiry,
+            experience: driver.experience,
+            status: driver.status
+        });
+        setActiveSection('add-driver');
+    };
+
+    const handleAddDriver = async (e) => {
+        e.preventDefault();
+        const url = editingId
+            ? `http://localhost:5000/api/drivers/${editingId}`
+            : 'http://localhost:5000/api/drivers';
+        const method = editingId ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showNotification(editingId ? "Driver Updated Successfully!" : "Driver Added Successfully!", 'success');
+                setFormData({
+                    firstName: '', lastName: '', phone: '', nic: '', address: '',
+                    licenseNumber: '', licenseType: '', licenseExpiry: '', experience: '', status: 'active'
+                });
+                setEditingId(null);
+                fetchDrivers();
+                setActiveSection('driver-list');
+            } else {
+                showNotification(`Failed to save driver: ${result.error || result.message}`, 'error');
+            }
+        } catch (error) {
+            console.error("Error saving driver:", error);
+            showNotification("Server Error: " + error.message, 'error');
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingId(null);
+        setFormData({
+            firstName: '', lastName: '', phone: '', nic: '', address: '',
+            licenseNumber: '', licenseType: '', licenseExpiry: '', experience: '', status: 'active'
+        });
+        setActiveSection('driver-list');
+    };
 
     const licenses = [
         { driver: 'Mr. Perera', licenseNo: 'B0123456', type: 'Both', issued: '2020-05-15', expiry: '2025-05-15', status: 'Valid' },
@@ -50,6 +154,17 @@ const DriverManagement = () => {
 
     return (
         <div className="dashboard-container">
+            {/* Notification Toast */}
+            {notification.visible && (
+                <div style={{ zIndex: 9999 }} className={`fixed top-5 right-5 px-6 py-4 rounded-lg shadow-lg text-white transform transition-all duration-300 ease-in-out flex items-center gap-3 animation-fade-in ${notification.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
+                    <i className={`fas ${notification.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} text-xl`}></i>
+                    <div>
+                        <h4 className="font-bold text-sm">{notification.type === 'success' ? 'Success' : 'Error'}</h4>
+                        <p className="text-sm">{notification.message}</p>
+                    </div>
+                </div>
+            )}
+
             {/* Mobile Hamburger */}
             <div className="lg:hidden fixed top-5 left-5 z-50 p-2 bg-maroon text-white rounded cursor-pointer" onClick={toggleSidebar}>
                 <i className="fas fa-bars text-xl"></i>
@@ -134,71 +249,85 @@ const DriverManagement = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {drivers.map(driver => (
-                                    <div key={driver.id} className="bg-white rounded-xl shadow-sm p-6 border border-slate-200 hover:shadow-md transition-all">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <h3 className="font-bold text-lg text-slate-800">{driver.name}</h3>
-                                                <p className="text-slate-500 text-sm">{driver.licenseType} License</p>
-                                            </div>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${driver.status === 'active' ? 'bg-green-100 text-green-800' :
+                            {drivers.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">No drivers found. Add a driver first.</div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {drivers.map(driver => (
+                                        <div key={driver.id} className="bg-white rounded-xl shadow-sm p-6 border border-slate-200 hover:shadow-md transition-all">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <h3 className="font-bold text-lg text-slate-800">{driver.name}</h3>
+                                                    <p className="text-slate-500 text-sm">{driver.licenseType} License</p>
+                                                </div>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${driver.status === 'active' ? 'bg-green-100 text-green-800' :
                                                     driver.status === 'on-leave' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                                                }`}>
-                                                {driver.status.charAt(0).toUpperCase() + driver.status.slice(1).replace('-', ' ')}
-                                            </span>
-                                        </div>
-                                        <div className="space-y-2 text-sm text-slate-600 mb-4">
-                                            <div className="flex justify-between"><span>Experience:</span> <span className="font-medium text-slate-800">{driver.experience} years</span></div>
-                                            <div className="flex justify-between">
-                                                <span>Rating:</span>
-                                                <span className="flex items-center font-medium text-slate-800">
-                                                    {driver.rating} <i className="fas fa-star text-yellow-500 ml-1 text-xs"></i>
+                                                    }`}>
+                                                    {driver.status.charAt(0).toUpperCase() + driver.status.slice(1).replace('-', ' ')}
                                                 </span>
                                             </div>
-                                            <div className="flex justify-between"><span>Phone:</span> <span className="font-medium text-slate-800">{driver.phone}</span></div>
-                                            <div className="flex justify-between"><span>Vehicle:</span> <span className="font-medium text-slate-800">{driver.assignedVehicle || 'Unassigned'}</span></div>
+                                            <div className="space-y-2 text-sm text-slate-600 mb-4">
+                                                <div className="flex justify-between"><span>Experience:</span> <span className="font-medium text-slate-800">{driver.experience} years</span></div>
+                                                <div className="flex justify-between">
+                                                    <span>Rating:</span>
+                                                    <span className="flex items-center font-medium text-slate-800">
+                                                        {driver.rating} <i className="fas fa-star text-yellow-500 ml-1 text-xs"></i>
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between"><span>Phone:</span> <span className="font-medium text-slate-800">{driver.phone}</span></div>
+                                                <div className="flex justify-between"><span>Vehicle:</span> <span className="font-medium text-slate-800">{driver.assignedVehicle || 'Unassigned'}</span></div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleEdit(driver)}
+                                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white dev-btn py-2 text-sm rounded-lg transition-colors"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 text-sm rounded-lg transition-colors">Profile</button>
+                                            </div>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white dev-btn py-2 text-sm rounded-lg transition-colors">Edit</button>
-                                            <button className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 text-sm rounded-lg transition-colors">Profile</button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
 
-                    {/* Add Driver Section */}
+                    {/* Add/Edit Driver Section */}
                     {activeSection === 'add-driver' && (
                         <div className="section animation-fade-in">
-                            <div className="section-header"><h2>Add New Driver</h2></div>
+                            <div className="section-header">
+                                <h2>
+                                    <i className={`fas ${editingId ? 'fa-user-edit' : 'fa-user-plus'} mr-2`}></i>
+                                    {editingId ? 'Edit Driver' : 'Add New Driver'}
+                                </h2>
+                            </div>
                             <div className="bg-white rounded-xl shadow-sm p-8 border border-slate-200">
-                                <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); alert("Driver added successfully!"); }}>
+                                <form className="space-y-6" onSubmit={handleAddDriver}>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
-                                            <input type="text" required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" placeholder="Enter full name" />
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">First Name</label>
+                                            <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" placeholder="Enter first name" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Last Name</label>
+                                            <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" placeholder="Enter last name" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">NIC Number</label>
-                                            <input type="text" required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" placeholder="e.g., 199012345678" />
+                                            <input type="text" name="nic" value={formData.nic} onChange={handleInputChange} required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" placeholder="e.g., 199012345678" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">Contact Number</label>
-                                            <input type="tel" required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" placeholder="+94 77 XXX XXXX" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
-                                            <input type="email" required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" placeholder="driver@university.lk" />
+                                            <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" placeholder="+94 77 XXX XXXX" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">License Number</label>
-                                            <input type="text" required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" placeholder="License number" />
+                                            <input type="text" name="licenseNumber" value={formData.licenseNumber} onChange={handleInputChange} required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" placeholder="License number" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">License Type</label>
-                                            <select required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900">
+                                            <select name="licenseType" value={formData.licenseType} onChange={handleInputChange} required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900">
                                                 <option value="">Select License Type</option>
                                                 <option value="Light">Light Vehicle (B1)</option>
                                                 <option value="Heavy">Heavy Vehicle (C1)</option>
@@ -207,20 +336,29 @@ const DriverManagement = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">License Expiry Date</label>
-                                            <input type="date" required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" />
+                                            <input type="date" name="licenseExpiry" value={formData.licenseExpiry} onChange={handleInputChange} required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">Experience (Years)</label>
-                                            <input type="number" required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" placeholder="Years of experience" />
+                                            <input type="number" name="experience" value={formData.experience} onChange={handleInputChange} required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-red-900" placeholder="Years of experience" />
                                         </div>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 mb-2">Address</label>
-                                        <textarea className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 h-24 outline-none focus:ring-2 focus:ring-red-900" placeholder="Full address"></textarea>
+                                        <textarea name="address" value={formData.address} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 h-24 outline-none focus:ring-2 focus:ring-red-900" placeholder="Full address"></textarea>
                                     </div>
-                                    <div className="flex justify-end pt-4">
+                                    <div className="flex justify-end pt-4 gap-4">
+                                        {editingId && (
+                                            <button
+                                                type="button"
+                                                onClick={handleCancelEdit}
+                                                className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 py-3 rounded-lg font-medium transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                        )}
                                         <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors">
-                                            Register Driver
+                                            {editingId ? 'Update Driver' : 'Register Driver'}
                                         </button>
                                     </div>
                                 </form>

@@ -17,8 +17,7 @@ const VehicleReservation = () => {
         returnTime: '',
         passengers: '',
         emergency_contact: '',
-        purpose: '',
-        passenger_list: ''
+        purpose: ''
     });
 
     const [distanceWarning, setDistanceWarning] = useState(false);
@@ -36,14 +35,35 @@ const VehicleReservation = () => {
         }
     }, [location]);
 
-    // Sample Data
-    const vehicles = [
-        { id: 1, type: 'Car', model: 'Toyota Axio', number: 'KI-1234', seats: 4, status: 'available', driver: 'Mr. Perera', fuelType: 'Petrol' },
-        { id: 2, type: 'Van', model: 'Toyota Hiace', number: 'KI-5678', seats: 15, status: 'available', driver: 'Mr. Fernando', fuelType: 'Diesel' },
-        { id: 3, type: 'Car', model: 'Nissan Sunny', number: 'KI-9012', seats: 4, status: 'maintenance', driver: 'Mr. Silva', fuelType: 'Petrol' },
-        { id: 4, type: 'Bus', model: 'Rosa Bus', number: 'KI-3456', seats: 30, status: 'available', driver: 'Mr. Kumara', fuelType: 'Diesel' },
-        { id: 5, type: 'Van', model: 'Suzuki Every', number: 'KI-7890', seats: 8, status: 'booked', driver: 'Mr. Ranasinghe', fuelType: 'Petrol' }
-    ];
+    const [vehicles, setVehicles] = useState([]);
+
+    useEffect(() => {
+        const fetchVehicles = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/vehicles');
+                const data = await response.json();
+                if (response.ok) {
+                    const mappedVehicles = data.map(v => ({
+                        id: v.vehicle_id,
+                        type: v.type,
+                        model: v.model,
+                        number: v.registration_number,
+                        seats: v.seating_capacity,
+                        status: v.status,
+                        driver: v.driver_name || 'Not Assigned',
+                        fuelType: v.fuel_type
+                    }));
+                    setVehicles(mappedVehicles);
+                } else {
+                    console.error('Failed to fetch vehicles');
+                }
+            } catch (error) {
+                console.error('Error loading vehicles:', error);
+            }
+        };
+
+        fetchVehicles();
+    }, []);
 
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -62,7 +82,7 @@ const VehicleReservation = () => {
     const validateStep1 = () => !!selectedVehicle;
 
     const validateStep2 = () => {
-        const required = ['destination', 'distance', 'date', 'time', 'returnDate', 'returnTime', 'passengers', 'emergency_contact', 'purpose', 'passenger_list'];
+        const required = ['destination', 'distance', 'date', 'time', 'returnDate', 'returnTime', 'passengers', 'emergency_contact', 'purpose'];
         return required.every(field => formData[field] && formData[field].trim() !== '');
     };
 
@@ -78,12 +98,50 @@ const VehicleReservation = () => {
 
     const prevStep = () => setCurrentStep(prev => prev - 1);
 
-    const submitReservation = () => {
-        // Simulate API
-        setTimeout(() => {
-            alert('Reservation submitted successfully!');
-            navigate('/dashboard');
-        }, 1000);
+    const submitReservation = async () => {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const requesterId = currentUser.id;
+
+        if (!requesterId) {
+            alert('You must be logged in to make a reservation.');
+            navigate('/');
+            return;
+        }
+
+        const payload = {
+            requesterId,
+            vehicleId: selectedVehicle.id,
+            destination: formData.destination,
+            distance: formData.distance,
+            passengers: formData.passengers,
+            date: formData.date,
+            time: formData.time,
+            returnDate: formData.returnDate,
+            returnTime: formData.returnTime,
+            purpose: formData.purpose
+        };
+
+        try {
+            const response = await fetch('http://localhost:5000/api/reservations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('Reservation submitted successfully!');
+                navigate('/dashboard');
+            } else {
+                alert(`Error: ${data.message || 'Failed to submit reservation'}`);
+            }
+        } catch (error) {
+            console.error('Reservation Error:', error);
+            alert('Server error. Please try again later.');
+        }
     };
 
     return (
@@ -242,10 +300,6 @@ const VehicleReservation = () => {
                                         <label className="block text-sm font-medium text-slate-700 mb-1">Purpose</label>
                                         <textarea name="purpose" value={formData.purpose} onChange={handleInputChange} rows="2" className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Passenger List</label>
-                                        <textarea name="passenger_list" value={formData.passenger_list} onChange={handleInputChange} rows="3" className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                                    </div>
                                 </div>
                                 <div className="mt-8 flex justify-between">
                                     <button onClick={prevStep} className="px-6 py-2 border border-slate-300 text-slate-600 rounded-lg font-medium hover:bg-slate-50 transition">Previous</button>
@@ -307,7 +361,7 @@ const VehicleReservation = () => {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

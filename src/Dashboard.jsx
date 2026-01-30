@@ -12,6 +12,58 @@ const Dashboard = () => {
     // Filter states
     const [vehicleStatusFilter, setVehicleStatusFilter] = useState('all');
 
+    // Emergency Form State
+    const [emergencyForm, setEmergencyForm] = useState({
+        nature: 'Medical Emergency',
+        isImmediate: true,
+        description: ''
+    });
+
+    const handleEmergencySubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const requesterId = currentUser.id;
+
+        if (!requesterId) {
+            alert('You must be logged in to submit a request.');
+            setLoading(false);
+            return;
+        }
+
+        const payload = {
+            requesterId,
+            reservationType: 'emergency',
+            natureOfEmergency: emergencyForm.nature,
+            purpose: emergencyForm.description,
+            date: new Date().toISOString().split('T')[0], // Today
+            time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), // Now
+            destination: 'EMERGENCY - Review Description',
+            passengers: 1 // Default
+        };
+
+        try {
+            const response = await fetch('http://localhost:5000/api/reservations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert('CRITICAL: Emergency request submitted successfully. Administration has been notified.');
+                setEmergencyForm({ nature: 'Medical Emergency', isImmediate: true, description: '' });
+            } else {
+                alert('Failed to submit emergency request. Please contact 011-2903903 immediately.');
+            }
+        } catch (error) {
+            console.error('Emergency Submit Error:', error);
+            alert('Connection Error. Please call security immediately.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         // Session check (simulated)
         const isLoggedIn = sessionStorage.getItem('isLoggedIn');
@@ -283,11 +335,15 @@ const Dashboard = () => {
                                     <i className="fas fa-info-circle mr-2"></i>
                                     <strong>High Priority:</strong> This request will be immediately flagged to the Registrar, SAR, and Dean given the urgency. Please use this only for genuine emergencies.
                                 </div>
-                                <form className="space-y-4">
+                                <form className="space-y-4" onSubmit={handleEmergencySubmit}>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 mb-1">Nature of Emergency</label>
-                                            <select className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                                            <select
+                                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                                value={emergencyForm.nature}
+                                                onChange={(e) => setEmergencyForm({ ...emergencyForm, nature: e.target.value })}
+                                            >
                                                 <option>Medical Emergency</option>
                                                 <option>Security Incident</option>
                                                 <option>Critical Infrastructure Failure</option>
@@ -297,17 +353,39 @@ const Dashboard = () => {
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 mb-1">Required Immediately?</label>
                                             <div className="flex items-center space-x-4 mt-2">
-                                                <label className="flex items-center"><input type="radio" name="immediate" className="mr-2" defaultChecked /> Yes</label>
-                                                <label className="flex items-center"><input type="radio" name="immediate" className="mr-2" /> No (Specify Time)</label>
+                                                <label className="flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="immediate"
+                                                        className="mr-2"
+                                                        checked={emergencyForm.isImmediate}
+                                                        onChange={() => setEmergencyForm({ ...emergencyForm, isImmediate: true })}
+                                                    /> Yes
+                                                </label>
+                                                <label className="flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="immediate"
+                                                        className="mr-2"
+                                                        checked={!emergencyForm.isImmediate}
+                                                        onChange={() => setEmergencyForm({ ...emergencyForm, isImmediate: false })}
+                                                    /> No (Specify Time)
+                                                </label>
                                             </div>
                                         </div>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-1">Description / Location</label>
-                                        <textarea rows="3" className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500" placeholder="Please describe the situation and pickup location..."></textarea>
+                                        <textarea
+                                            rows="3"
+                                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                            placeholder="Please describe the situation and pickup location..."
+                                            value={emergencyForm.description}
+                                            onChange={(e) => setEmergencyForm({ ...emergencyForm, description: e.target.value })}
+                                        ></textarea>
                                     </div>
-                                    <button type="button" className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded shadow-lg transition" onClick={() => showNotification("Emergency request sent to administration!", "warning")}>
-                                        <i className="fas fa-paper-plane mr-2"></i> Submit Emergency Request
+                                    <button type="submit" disabled={loading} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded shadow-lg transition disabled:opacity-50">
+                                        <i className={`fas fa-paper-plane mr-2 ${loading ? 'animate-pulse' : ''}`}></i> {loading ? 'Sending...' : 'Submit Emergency Request'}
                                     </button>
                                 </form>
                             </div>

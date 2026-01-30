@@ -63,12 +63,30 @@ const Signup = () => {
         }
 
         setIsSubmitting(true);
-        // Simulate API call
-        setTimeout(() => {
+        setIsSubmitting(true);
+        try {
+            const response = await fetch('http://localhost:5000/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('Account created successfully! You can now log in.');
+                navigate('/');
+            } else {
+                alert(data.message || 'Registration failed. Please try again.');
+            }
+        } catch (error) {
+            console.error('Registration Error:', error);
+            alert('An error occurred. Please check your connection and try again.');
+        } finally {
             setIsSubmitting(false);
-            alert('Account created successfully! Please check your email for verification.');
-            navigate('/');
-        }, 2000);
+        }
     };
 
     return (
@@ -235,12 +253,11 @@ const Signup = () => {
                                         className="input-field block w-full px-3 py-3 rounded-lg focus:ring-2 focus:ring-[#F6DD26] transition"
                                     >
                                         <option value="">Select Role</option>
-                                        <option value="lecturer">Lecturer</option>
+                                        <option value="staff">Staff</option>
                                         <option value="hod">Head of Department</option>
                                         <option value="dean">Dean</option>
                                         <option value="sar">Senior Assistant Registrar</option>
                                         <option value="registrar">Registrar</option>
-                                        <option value="driver">Driver</option>
                                     </select>
                                 </div>
 

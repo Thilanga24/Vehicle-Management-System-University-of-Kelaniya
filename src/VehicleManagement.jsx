@@ -33,16 +33,122 @@ const VehicleManagement = () => {
     const [activeSection, setActiveSection] = useState('vehicle-list');
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    // Sample Data
-    const initialVehicles = [
-        { id: 1, type: 'Car', make: 'Toyota', model: 'Axio', number: 'KI-1234', seats: 4, status: 'available', driver: 'Mr. Perera', fuelType: 'Petrol', year: 2020, mileage: 45000 },
-        { id: 2, type: 'Van', make: 'Toyota', model: 'Hiace', number: 'KI-5678', seats: 15, status: 'available', driver: 'Mr. Fernando', fuelType: 'Diesel', year: 2019, mileage: 80000 },
-        { id: 3, type: 'Car', make: 'Nissan', model: 'Sunny', number: 'KI-9012', seats: 4, status: 'maintenance', driver: 'Mr. Silva', fuelType: 'Petrol', year: 2018, mileage: 95000 },
-        { id: 4, type: 'Bus', make: 'Mitsubishi', model: 'Rosa', number: 'KI-3456', seats: 30, status: 'available', driver: 'Mr. Kumara', fuelType: 'Diesel', year: 2021, mileage: 25000 },
-        { id: 5, type: 'Van', make: 'Suzuki', model: 'Every', number: 'KI-7890', seats: 8, status: 'booked', driver: 'Mr. Ranasinghe', fuelType: 'Petrol', year: 2020, mileage: 35000 }
-    ];
+    const [vehicles, setVehicles] = useState([]);
+    const [editingId, setEditingId] = useState(null);
+    const [formData, setFormData] = useState({
+        type: '',
+        registrationNumber: '',
+        make: '',
+        model: '',
+        year: '',
+        seatingCapacity: '',
+        fuelType: '',
+        mileage: '',
+        status: 'available',
+        notes: ''
+    });
 
-    const [vehicles, setVehicles] = useState(initialVehicles);
+    const [notification, setNotification] = useState({ message: '', type: '', visible: false });
+
+    // Notification Helper
+    const showNotification = (message, type = 'success') => {
+        setNotification({ message, type, visible: true });
+        setTimeout(() => setNotification((prev) => ({ ...prev, visible: false })), 3000);
+    };
+
+    // Fetch vehicles from backend
+    const fetchVehicles = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/vehicles');
+            const data = await response.json();
+            if (response.ok) {
+                const mappedVehicles = data.map(v => ({
+                    id: v.vehicle_id,
+                    type: v.type,
+                    make: v.make,
+                    model: v.model,
+                    number: v.registration_number,
+                    seats: v.seating_capacity,
+                    status: v.status,
+                    driver: v.driver_name || 'Unassigned',
+                    fuelType: v.fuel_type,
+                    year: v.year,
+                    mileage: v.current_mileage || 0
+                }));
+                setVehicles(mappedVehicles);
+            }
+        } catch (error) {
+            console.error("Error fetching vehicles:", error);
+            showNotification("Failed to fetch vehicles", "error");
+        }
+    };
+
+    useEffect(() => {
+        fetchVehicles();
+    }, []);
+
+    const handleInputChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleEdit = (vehicle) => {
+        setEditingId(vehicle.id);
+        setFormData({
+            type: vehicle.type,
+            registrationNumber: vehicle.number,
+            make: vehicle.make,
+            model: vehicle.model,
+            year: vehicle.year,
+            seatingCapacity: vehicle.seats,
+            fuelType: vehicle.fuelType,
+            mileage: vehicle.mileage,
+            status: vehicle.status,
+            notes: '' // Ideally fetch this too if available
+        });
+        setActiveSection('add-vehicle');
+    };
+
+    const handleAddVehicle = async (e) => {
+        e.preventDefault();
+        const url = editingId
+            ? `http://localhost:5000/api/vehicles/${editingId}`
+            : 'http://localhost:5000/api/vehicles';
+
+        const method = editingId ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                showNotification(editingId ? "Vehicle Updated Successfully!" : "Vehicle Added Successfully!", "success");
+                setFormData({
+                    type: '', registrationNumber: '', make: '', model: '', year: '',
+                    seatingCapacity: '', fuelType: '', mileage: '', status: 'available', notes: ''
+                });
+                setEditingId(null);
+                fetchVehicles(); // Refresh list
+                setActiveSection('vehicle-list'); // Go back to list
+            } else {
+                showNotification("Failed to save vehicle.", "error");
+            }
+        } catch (error) {
+            console.error("Error saving vehicle:", error);
+            showNotification("Server Error", "error");
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingId(null);
+        setFormData({
+            type: '', registrationNumber: '', make: '', model: '', year: '',
+            seatingCapacity: '', fuelType: '', mileage: '', status: 'available', notes: ''
+        });
+        setActiveSection('vehicle-list');
+    };
 
     const maintenanceRecords = [
         { vehicle: 'KI-1234', service: 'Oil Change', date: '2024-10-01', cost: 'Rs. 5,000', status: 'Completed' },
@@ -115,6 +221,17 @@ const VehicleManagement = () => {
 
     return (
         <div className="dashboard-container">
+            {/* Notification Toast */}
+            {notification.visible && (
+                <div style={{ zIndex: 9999 }} className={`fixed top-5 right-5 px-6 py-4 rounded-lg shadow-lg text-white transform transition-all duration-300 ease-in-out flex items-center gap-3 animation-fade-in ${notification.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
+                    <i className={`fas ${notification.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} text-xl`}></i>
+                    <div>
+                        <h4 className="font-bold text-sm">{notification.type === 'success' ? 'Success' : 'Error'}</h4>
+                        <p className="text-sm">{notification.message}</p>
+                    </div>
+                </div>
+            )}
+
             {/* Mobile Hamburger */}
             <div className="lg:hidden fixed top-5 left-5 z-50 p-2 bg-maroon text-white rounded cursor-pointer" onClick={toggleSidebar}>
                 <i className="fas fa-bars text-xl"></i>
@@ -206,49 +323,67 @@ const VehicleManagement = () => {
                                     </select>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {vehicles.map(vehicle => (
-                                    <div key={vehicle.id} className="bg-white rounded-xl shadow-sm p-6 border border-slate-200 hover:shadow-md transition-all duration-200 vehicle-card">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <h3 className="font-bold text-lg text-slate-800">{vehicle.number}</h3>
-                                                <p className="text-slate-500 text-sm">{vehicle.make} {vehicle.model}</p>
-                                            </div>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${vehicle.status === 'available' ? 'bg-green-100 text-green-800' :
+                            {vehicles.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">No vehicles found. Add a vehicle first.</div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {vehicles.map(vehicle => (
+                                        <div key={vehicle.id} className="bg-white rounded-xl shadow-sm p-6 border border-slate-200 hover:shadow-md transition-all duration-200 vehicle-card">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <h3 className="font-bold text-lg text-slate-800">{vehicle.number}</h3>
+                                                    <p className="text-slate-500 text-sm">{vehicle.make} {vehicle.model}</p>
+                                                </div>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${vehicle.status === 'available' ? 'bg-green-100 text-green-800' :
                                                     vehicle.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                                                }`}>
-                                                {vehicle.status.charAt(0).toUpperCase() + vehicle.status.slice(1)}
-                                            </span>
+                                                    }`}>
+                                                    {vehicle.status.charAt(0).toUpperCase() + vehicle.status.slice(1)}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-2 text-sm text-slate-600 mb-6">
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><span>Type:</span> <span className="font-medium text-slate-800">{vehicle.type}</span></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><span>Seats:</span> <span className="font-medium text-slate-800">{vehicle.seats}</span></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><span>Fuel:</span> <span className="font-medium text-slate-800">{vehicle.fuelType}</span></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><span>Driver:</span> <span className="font-medium text-slate-800">{vehicle.driver}</span></div>
+                                                <div className="flex justify-between"><span>Mileage:</span> <span className="font-medium text-slate-800">{vehicle.mileage ? vehicle.mileage.toLocaleString() : '0'} km</span></div>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <button
+                                                    onClick={() => handleEdit(vehicle)}
+                                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200">History</button>
+                                            </div>
                                         </div>
-                                        <div className="space-y-2 text-sm text-slate-600 mb-6">
-                                            <div className="flex justify-between border-b border-slate-50 pb-1"><span>Type:</span> <span className="font-medium text-slate-800">{vehicle.type}</span></div>
-                                            <div className="flex justify-between border-b border-slate-50 pb-1"><span>Seats:</span> <span className="font-medium text-slate-800">{vehicle.seats}</span></div>
-                                            <div className="flex justify-between border-b border-slate-50 pb-1"><span>Fuel:</span> <span className="font-medium text-slate-800">{vehicle.fuelType}</span></div>
-                                            <div className="flex justify-between border-b border-slate-50 pb-1"><span>Driver:</span> <span className="font-medium text-slate-800">{vehicle.driver}</span></div>
-                                            <div className="flex justify-between"><span>Mileage:</span> <span className="font-medium text-slate-800">{vehicle.mileage.toLocaleString()} km</span></div>
-                                        </div>
-                                        <div className="flex gap-3">
-                                            <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200">Edit</button>
-                                            <button className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200">History</button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
 
-                    {/* Add Vehicle */}
+                    {/* Add/Edit Vehicle */}
                     {activeSection === 'add-vehicle' && (
                         <div className="section animation-fade-in">
                             <div className="section-header">
-                                <h2><i className="fas fa-plus-circle mr-2"></i> Add New Vehicle</h2>
+                                <h2>
+                                    <i className={`fas ${editingId ? 'fa-edit' : 'fa-plus-circle'} mr-2`}></i>
+                                    {editingId ? 'Edit Vehicle' : 'Add New Vehicle'}
+                                </h2>
                             </div>
                             <div className="bg-white rounded-xl shadow-sm p-8 border border-slate-200">
-                                <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); alert("Vehicle Added!"); }}>
+                                <form className="space-y-6" onSubmit={handleAddVehicle}>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">Vehicle Type</label>
-                                            <select required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all">
+                                            <select
+                                                name="type"
+                                                value={formData.type}
+                                                onChange={handleInputChange}
+                                                required
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all"
+                                            >
                                                 <option value="">Select Type</option>
                                                 <option value="Car">Car</option>
                                                 <option value="Van">Van</option>
@@ -257,27 +392,73 @@ const VehicleManagement = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">Vehicle Number</label>
-                                            <input type="text" required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all" placeholder="e.g. KI-1234" />
+                                            <input
+                                                type="text"
+                                                name="registrationNumber"
+                                                value={formData.registrationNumber}
+                                                onChange={handleInputChange}
+                                                required
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all"
+                                                placeholder="e.g. KI-1234"
+                                            />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">Make</label>
-                                            <input type="text" required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all" placeholder="Toyota" />
+                                            <input
+                                                type="text"
+                                                name="make"
+                                                value={formData.make}
+                                                onChange={handleInputChange}
+                                                required
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all"
+                                                placeholder="Toyota"
+                                            />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">Model</label>
-                                            <input type="text" required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all" placeholder="Axio" />
+                                            <input
+                                                type="text"
+                                                name="model"
+                                                value={formData.model}
+                                                onChange={handleInputChange}
+                                                required
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all"
+                                                placeholder="Axio"
+                                            />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">Year</label>
-                                            <input type="number" required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all" placeholder="2020" />
+                                            <input
+                                                type="number"
+                                                name="year"
+                                                value={formData.year}
+                                                onChange={handleInputChange}
+                                                required
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all"
+                                                placeholder="2020"
+                                            />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">Seating Capacity</label>
-                                            <input type="number" required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all" placeholder="4" />
+                                            <input
+                                                type="number"
+                                                name="seatingCapacity"
+                                                value={formData.seatingCapacity}
+                                                onChange={handleInputChange}
+                                                required
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all"
+                                                placeholder="4"
+                                            />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">Fuel Type</label>
-                                            <select required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all">
+                                            <select
+                                                name="fuelType"
+                                                value={formData.fuelType}
+                                                onChange={handleInputChange}
+                                                required
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all"
+                                            >
                                                 <option value="">Select Fuel Type</option>
                                                 <option value="Petrol">Petrol</option>
                                                 <option value="Diesel">Diesel</option>
@@ -286,16 +467,46 @@ const VehicleManagement = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">Mileage (km)</label>
-                                            <input type="number" required className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all" placeholder="50000" />
+                                            <input
+                                                type="number"
+                                                name="mileage"
+                                                value={formData.mileage}
+                                                onChange={handleInputChange}
+                                                required
+                                                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all"
+                                                placeholder="50000"
+                                            />
                                         </div>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 mb-2">Additional Notes</label>
-                                        <textarea className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 h-24 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all" placeholder="Any additional information..."></textarea>
+                                        <textarea
+                                            name="notes"
+                                            value={formData.notes}
+                                            onChange={handleInputChange}
+                                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 h-24 focus:ring-2 focus:ring-maroon focus:border-transparent outline-none transition-all"
+                                            placeholder="Any additional information..."
+                                        ></textarea>
                                     </div>
-                                    <div className="flex justify-end pt-4">
+                                    <div className="flex justify-end pt-4 gap-4">
+                                        {editingId && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setEditingId(null);
+                                                    setFormData({
+                                                        type: '', registrationNumber: '', make: '', model: '', year: '',
+                                                        seatingCapacity: '', fuelType: '', mileage: '', status: 'available', notes: ''
+                                                    });
+                                                    setActiveSection('vehicle-list');
+                                                }}
+                                                className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 py-3 rounded-lg font-bold shadow-sm transition-all duration-200"
+                                            >
+                                                Cancel
+                                            </button>
+                                        )}
                                         <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold shadow-md transform hover:-translate-y-0.5 transition-all duration-200">
-                                            Add Vehicle
+                                            {editingId ? 'Update Vehicle' : 'Add Vehicle'}
                                         </button>
                                     </div>
                                 </form>

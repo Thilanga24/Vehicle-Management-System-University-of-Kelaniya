@@ -37,39 +37,10 @@ const App = () => {
     const [fpConfirmPassword, setFpConfirmPassword] = useState('');
 
     // --- Constants ---
-    const demoAccounts = {
-        'admin@uok.lk': { password: 'Admin@123', role: 'admin', name: 'System Administrator' },
-        'staff@uok.lk': { password: 'Staff@123', role: 'staff', name: 'Dr. John Silva' },
-        'hod@uok.lk': { password: 'Hod@123', role: 'hod', name: 'Prof. Jane Perera' },
-        'dean@uok.lk': { password: 'Dean@123', role: 'dean', name: 'Prof. Michael Fernando' },
-        'sar@uok.lk': { password: 'Sar@123', role: 'sar', name: 'SAR Officer Kumar' },
-        'registrar@uok.lk': { password: 'Registrar@123', role: 'registrar', name: 'Registrar Bandara' }
-    };
-
-    const PASSWORD_OVERRIDES_KEY = 'vmsPasswordOverrides';
-    const FP_DEMO_PREFIX = 'vms_fp_demo_';
+    // --- Constants ---
+    // (Demo accounts removed)
 
     // --- Helpers ---
-    const getPasswordOverrides = () => {
-        try {
-            return JSON.parse(localStorage.getItem(PASSWORD_OVERRIDES_KEY) || '{}') || {};
-        } catch {
-            return {};
-        }
-    };
-
-    const setPasswordOverride = (email, newPassword) => {
-        const overrides = getPasswordOverrides();
-        overrides[email] = newPassword;
-        localStorage.setItem(PASSWORD_OVERRIDES_KEY, JSON.stringify(overrides));
-    };
-
-    const getPasswordForEmail = (email) => {
-        const overrides = getPasswordOverrides();
-        if (overrides[email]) return overrides[email];
-        return demoAccounts[email]?.password;
-    };
-
     const isValidEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(val || '').trim());
 
     const showAlert = (type, message) => {
@@ -79,6 +50,7 @@ const App = () => {
     const clearAlert = () => {
         setFpAlert({ show: false, type: '', message: '' });
     };
+
 
     const redirectToDashboard = (role) => {
         if (role === 'registrar') {
@@ -97,111 +69,55 @@ const App = () => {
     };
 
     // --- Handlers ---
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setIsLoggingIn(true);
 
-        setTimeout(() => {
-            setIsLoggingIn(false);
-            const normalizedEmail = email.toLowerCase().trim();
+        try {
+            const response = await fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
 
-            if (demoAccounts[normalizedEmail]) {
-                const account = demoAccounts[normalizedEmail];
-                const expectedPassword = getPasswordForEmail(normalizedEmail);
+            const data = await response.json();
 
-                if (expectedPassword === password && account.role === role) {
-                    const userData = {
-                        email: normalizedEmail,
-                        name: account.name,
-                        role: role,
-                        loginTime: new Date().toISOString()
-                    };
-                    sessionStorage.setItem('isLoggedIn', 'true');
-                    sessionStorage.setItem('userRole', role);
-                    sessionStorage.setItem('userName', account.name);
-                    localStorage.setItem('currentUser', JSON.stringify(userData));
-
-                    redirectToDashboard(role);
-                } else if (account.role !== role) {
-                    alert(`Error: Selected role does not match this account. Please select role: ${account.role}`);
-                } else {
-                    alert('Invalid password. Please try again.');
+            if (response.ok) {
+                // Check if selected role matches the user's actual role
+                if (data.user.role !== role) {
+                    alert(`Role Mismatch: This account is registered as '${data.user.role}', but you selected '${role}'.`);
+                    setIsLoggingIn(false);
+                    return;
                 }
+
+                // Success
+                sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('userRole', role);
+                sessionStorage.setItem('userName', data.user.name);
+                sessionStorage.setItem('authToken', data.token);
+                localStorage.setItem('currentUser', JSON.stringify(data.user));
+
+                redirectToDashboard(role);
             } else {
-                alert('Account not found. Please use a valid demo account email.');
+                alert(data.message || 'Login failed');
             }
-        }, 1500);
+        } catch (error) {
+            console.error('Login Error:', error);
+            alert('Cannot connect to server. Ensure backend is running.');
+        } finally {
+            setIsLoggingIn(false);
+        }
     };
 
     const handleSendCode = async () => {
-        clearAlert();
-        const email = fpEmail.trim().toLowerCase();
-        if (!isValidEmail(email)) {
-            showAlert('error', 'Please enter a valid email address.');
-            return;
-        }
-
-        setFpLoading(true);
-        try {
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            const code = String(Math.floor(100000 + Math.random() * 900000));
-            sessionStorage.setItem(`${FP_DEMO_PREFIX}${email}`, JSON.stringify({ code, createdAt: Date.now() }));
-            console.log(`[VMS Demo] Password reset code for ${email}: ${code}`);
-            showAlert('warning', `Demo mode: backend not reachable. Use code: ${code}`);
-            setFpStep(2);
-        } catch (err) {
-            showAlert('error', 'Something went wrong. Please try again.');
-        } finally {
-            setFpLoading(false);
-        }
+        alert("Password reset is currently disabled. Please contact the system administrator.");
+        setShowForgotModal(false);
     };
 
     const handleResetPassword = async () => {
-        clearAlert();
-        const email = fpEmail.trim().toLowerCase();
-
-        if (!/^\d{6}$/.test(fpCode)) {
-            showAlert('error', 'Please enter the 6-digit verification code.');
-            return;
-        }
-        if (fpNewPassword.length < 8) {
-            showAlert('error', 'Password must be at least 8 characters.');
-            return;
-        }
-        if (fpNewPassword !== fpConfirmPassword) {
-            showAlert('error', 'Passwords do not match.');
-            return;
-        }
-
-        setFpLoading(true);
-        try {
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            const raw = sessionStorage.getItem(`${FP_DEMO_PREFIX}${email}`);
-            const parsed = raw ? JSON.parse(raw) : null;
-
-            if (!parsed || Date.now() - parsed.createdAt > 15 * 60 * 1000) {
-                showAlert('error', 'Demo code expired. Please resend the code.');
-                return;
-            }
-            if (parsed.code !== fpCode) {
-                showAlert('error', 'Invalid code. Please try again.');
-                return;
-            }
-
-            setPasswordOverride(email, fpNewPassword);
-            showAlert('success', 'Demo mode: Password reset successful. You can sign in now.');
-
-            setTimeout(() => {
-                setShowForgotModal(false);
-                setEmail(email);
-                setPassword('');
-                setFpStep(1);
-            }, 1500);
-        } catch (err) {
-            showAlert('error', 'Reset failed. Please try again.');
-        } finally {
-            setFpLoading(false);
-        }
+        alert("Password reset is currently disabled.");
     };
 
     return (
@@ -362,23 +278,7 @@ const App = () => {
                             </button>
                         </form>
 
-                        {/* Demo Accounts */}
-                        <div className="mt-6 bg-[#0f172a]/50 border border-[#F6DD26]/30 rounded-lg p-4 text-left">
-                            <div className="flex items-start">
-                                <FontAwesomeIcon icon={faInfoCircle} className="text-[#F6DD26] mt-1 mr-2" />
-                                <div>
-                                    <h4 className="text-sm font-medium text-[#F6DD26] mb-2">Demo Accounts</h4>
-                                    <div className="text-[10px] sm:text-xs text-gray-400 space-y-1">
-                                        <p><strong>Admin:</strong> admin@uok.lk / Admin@123</p>
-                                        <p><strong>Registrar:</strong> registrar@uok.lk / Registrar@123</p>
-                                        <p><strong>SAR:</strong> sar@uok.lk / Sar@123</p>
-                                        <p><strong>HOD:</strong> hod@uok.lk / Hod@123</p>
-                                        <p><strong>Dean:</strong> dean@uok.lk / Dean@123</p>
-                                        <p><strong>Staff:</strong> staff@uok.lk / Staff@123</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        {/* Demo Accounts Removed */}
 
                         <div className="mt-6 text-center pt-4 border-t border-gray-700">
                             <span className="text-gray-400 text-sm">New to UoK VMS? </span>
