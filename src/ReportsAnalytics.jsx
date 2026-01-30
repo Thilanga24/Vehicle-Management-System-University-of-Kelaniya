@@ -286,7 +286,13 @@ const ReportsAnalytics = () => {
 
                 <div className="menu-section">
                     <div className="menu-section-title">Navigation</div>
-                    <div className="menu-item" onClick={() => navigate('/dashboard')}>
+                    <div className="menu-item" onClick={() => {
+                        const role = sessionStorage.getItem('userRole');
+                        if (role === 'sar') navigate('/sar-dashboard');
+                        else if (role === 'registrar') navigate('/registrar-dashboard');
+                        else if (role === 'admin') navigate('/admin-dashboard');
+                        else navigate('/dashboard');
+                    }}>
                         <i className="fas fa-arrow-left"></i>
                         <span>Back to Dashboard</span>
                     </div>

@@ -98,7 +98,7 @@ const Signup = () => {
                                 className="w-full h-full object-contain drop-shadow-2xl"
                             />
                         </div>
-                        <h1 className="text-4xl font-bold mb-4 font-serif">University of Kelaniya</h1>
+                        <h1 className="text-4xl font-bold mb-4 font-serif !text-white" style={{ color: 'white' }}>University of Kelaniya</h1>
                         <p className="text-xl text-[#F6DD26] mb-2 font-medium tracking-wide">Vehicle Management System</p>
                         <p className="text-lg text-white/80">Transportation Division</p>
                     </div>
@@ -161,7 +161,7 @@ const Signup = () => {
                 <div className="w-full max-w-xl relative z-10">
                     <div className="login-card rounded-2xl card-shadow p-6 sm:p-10 border border-[#F6DD26]/20">
                         <div className="text-center mb-8">
-                            <h2 className="text-3xl font-bold text-white mb-2">Create Account</h2>
+                            <h2 className="text-3xl font-bold !text-white mb-2" style={{ color: 'white' }}>Create Account</h2>
                             <p className="text-gray-300">Join the University Transportation System</p>
                         </div>
 

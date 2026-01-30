@@ -1,0 +1,229 @@
+/* RegistrarDashboard.css - Matching the University of Kelaniya Theme */
+
+/* --- Global & Layout (matching DeanDashboard.css/Dashboard.css) --- */
+.registrar-dashboard-container * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.registrar-dashboard-container {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f8fafc;
+    /* Light background like the rest of the dashboards */
+    min-height: 100vh;
+    display: flex;
+    color: #334155;
+}
+
+/* Sidebar (Maroon/Dark Theme for University Branding) */
+.sidebar {
+    width: 280px;
+    background: linear-gradient(180deg, #1a0505 0%, #2d0a0a 100%);
+    color: white;
+    padding: 0;
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+}
+
+/* Sidebar Navigation Items */
+.nav-item {
+    padding: 14px 20px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-radius: 10px;
+    margin: 4px 10px;
+    position: relative;
+    overflow: hidden;
+    color: #e2e8f0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.nav-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background: #F6DD26;
+    /* UoK Yellow Highlight */
+    transform: scaleY(0);
+    transition: transform 0.3s;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(4px);
+    color: #F6DD26;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.nav-item.active {
+    background: linear-gradient(90deg, rgba(102, 0, 0, 0.4) 0%, rgba(128, 0, 0, 0.2) 100%);
+    border-left: 3px solid #F6DD26;
+    color: #F6DD26;
+    box-shadow: none;
+    border-color: transparent;
+}
+
+/* --- Buttons (Standardized to match Dashboard.css) --- */
+.btn-primary {
+    background: linear-gradient(135deg, #660000 0%, #800000 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 0, 0, 0.3);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #800000 0%, #990000 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 0, 0, 0.4);
+}
+
+.btn-success,
+.btn-approve {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.btn-approve:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-2px);
+}
+
+.btn-danger,
+.btn-reject {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.btn-reject:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-2px);
+}
+
+/* --- Cards & Stats (Matching DeanDashboard style) --- */
+.stat-card {
+    background: white;
+    padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s;
+    border: 1px solid #f1f5f9;
+    position: relative;
+    overflow: hidden;
+    color: #334155;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.card-gradient {
+    background: white;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    color: #334155;
+    border-radius: 12px;
+}
+
+/* Typography & Layout Tweaks for Light Theme compatibility */
+h1,
+h2,
+h3,
+h4,
+section-header {
+    color: #1e293b;
+}
+
+p,
+span {
+    color: #64748b;
+}
+
+/* Fix specific dark theme colors from original component if they clash */
+.bg-gray-800 {
+    background-color: white !important;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+}
+
+.text-gray-300,
+.text-gray-400,
+.text-gray-500 {
+    color: #64748b !important;
+}
+
+.text-white {
+    color: #1e293b !important;
+    /* Invert for light theme readability on cards */
+}
+
+/* Important overrides for sidebar text to remain light */
+.sidebar .text-white {
+    color: white !important;
+}
+
+.sidebar .text-gray-300,
+.sidebar .text-gray-400 {
+    color: #cbd5e1 !important;
+}
+
+/* Search Box */
+input[type="text"],
+select {
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+}
+
+input[type="text"]:focus,
+select:focus {
+    border-color: #660000;
+    ring: 2px solid #660000;
+}
+
+/* Animation Utils */
+.animation-fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

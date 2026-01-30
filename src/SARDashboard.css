@@ -1,0 +1,306 @@
+/* SARDashboard.css - UoK Maroon/Gold Theme */
+
+:root {
+    --sar-primary-maroon: #660000;
+    --sar-dark-maroon: #400000;
+    --sar-deep-maroon: #2d0a0a;
+    --sar-accent-gold: #F6DD26;
+    --sar-text-dark: #1e293b;
+    --sar-text-light: #64748b;
+    --sar-bg-light: #f8fafc;
+    --sar-card-bg: #ffffff;
+}
+
+.sar-dashboard-container * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.sar-dashboard-container {
+    background: var(--sar-bg-light);
+    color: var(--sar-text-dark);
+    min-height: 100vh;
+    font-family: 'Inter', system-ui, sans-serif;
+    display: flex;
+}
+
+/* Sidebar */
+.sar-sidebar {
+    background: linear-gradient(180deg, #1a0505 0%, #2d0a0a 100%);
+    width: 20rem;
+    /* w-80 */
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 50;
+    transition: transform 0.3s ease;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+}
+
+.sar-sidebar .p-6 {
+    padding: 1.5rem;
+}
+
+.sar-sidebar .border-b {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Nav Items */
+.sar-nav-item {
+    margin: 4px 10px;
+    padding: 14px 20px;
+    border-radius: 10px;
+    color: #e2e8f0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.sar-nav-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(4px);
+    color: #F6DD26;
+    box-shadow: none;
+}
+
+.sar-nav-item.active {
+    background: linear-gradient(90deg, rgba(102, 0, 0, 0.4) 0%, rgba(128, 0, 0, 0.2) 100%);
+    border-left: 3px solid #F6DD26;
+    color: #F6DD26;
+    box-shadow: none;
+}
+
+/* Fixed Logout Button Area */
+.sar-logout-area {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 20rem;
+    padding: 1rem;
+    background: transparent;
+    /* Changed from opaque to transparent or matching sidebar */
+    /* border-top: 1px solid rgba(255,255,255,0.1); Optional */
+}
+
+/* Main Content */
+.sar-main-content {
+    margin-left: 20rem;
+    /* ml-80 */
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    background: var(--sar-bg-light);
+}
+
+/* Cards */
+.sar-card-gradient {
+    background: var(--sar-card-bg);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.sar-stat-card {
+    background: var(--sar-card-bg);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    padding: 1.5rem;
+}
+
+.sar-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Buttons */
+.sar-btn {
+    padding: 0.5rem 1.0rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+/* Primary = Maroon */
+.sar-btn-primary {
+    background: linear-gradient(135deg, #660000 0%, #800000 100%);
+    box-shadow: 0 4px 12px rgba(102, 0, 0, 0.3);
+}
+
+.sar-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 0, 0, 0.4);
+}
+
+/* Secondary = Gold */
+.sar-btn-secondary {
+    background: linear-gradient(135deg, #F6DD26 0%, #eab308 100%);
+    color: #400000;
+    box-shadow: 0 4px 12px rgba(246, 221, 38, 0.3);
+}
+
+.sar-btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(246, 221, 38, 0.4);
+}
+
+/* Appeals/Success = Green */
+.sar-btn-approve {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.sar-btn-approve:hover {
+    transform: translateY(-2px);
+    background: #059669;
+}
+
+/* Reject = Red */
+.sar-btn-reject {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.sar-btn-reject:hover {
+    transform: translateY(-2px);
+    background: #dc2626;
+}
+
+.sar-btn-forward {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.sar-btn-forward:hover {
+    background: #ea580c;
+}
+
+/* Utility Colors for text/bg overrides */
+.text-gray-400 {
+    color: #64748b !important;
+}
+
+.text-gray-300 {
+    color: #94a3b8 !important;
+}
+
+.text-white {
+    color: #ffffff !important;
+}
+
+/* In light mode, some text needs to be dark */
+.sar-main-content h1,
+.sar-main-content h2,
+.sar-main-content h3,
+.sar-main-content .font-bold {
+    color: #1e293b;
+}
+
+.sar-main-content .text-white {
+    color: #ffffff !important;
+    /* Force white for badges/buttons */
+}
+
+/* But inside sidebar, text should remain light */
+.sar-sidebar h1,
+.sar-sidebar p {
+    color: #f8fafc;
+    /* light */
+}
+
+.sar-sidebar .text-gray-400 {
+    color: #9ca3af !important;
+}
+
+.sar-sidebar .text-gray-300 {
+    color: #cbd5e1 !important;
+}
+
+/* Status Colors */
+.status-pending {
+    color: #f59e0b;
+}
+
+.status-approved {
+    color: #10b981;
+}
+
+.status-rejected {
+    color: #ef4444;
+}
+
+.status-forwarded {
+    color: #f97316;
+}
+
+/* Icon Backgrounds */
+.sar-icon-bg {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sar-icon-bg.yellow {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #d97706;
+}
+
+.sar-icon-bg.blue {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #2563eb;
+}
+
+.sar-icon-bg.green {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #059669;
+}
+
+.sar-icon-bg.red {
+    background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%);
+    color: #dc2626;
+}
+
+/* Animation */
+.animation-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 1024px) {
+    .sar-main-content {
+        margin-left: 0;
+    }
+
+    .sar-sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sar-sidebar.open {
+        transform: translateX(0);
+    }
+}

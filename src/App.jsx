@@ -89,6 +89,8 @@ const App = () => {
             navigate('/hod-dashboard');
         } else if (role === 'dean') {
             navigate('/dean-dashboard');
+        } else if (role === 'admin') {
+            navigate('/admin-dashboard');
         } else {
             navigate('/dashboard');
         }
@@ -224,7 +226,7 @@ const App = () => {
                         <div className="w-24 h-24 mb-6 relative mx-auto lg:mx-0">
                             <img src="/assets/uok_logo.png" alt="University Log" className="w-full h-full object-contain drop-shadow-2xl" />
                         </div>
-                        <h1 className="text-4xl font-bold mb-4 font-serif">University of Kelaniya</h1>
+                        <h1 className="text-4xl font-bold mb-4 font-serif !text-white" style={{ color: 'white' }}>University of Kelaniya</h1>
                         <p className="text-xl text-[#F6DD26] mb-2 font-medium tracking-wide">Vehicle Management System</p>
                         <p className="text-lg text-white/80">Authorized Access Only</p>
                     </div>
@@ -272,7 +274,7 @@ const App = () => {
                 <div className="w-full max-w-md relative z-10">
                     <div className="login-card rounded-2xl card-shadow p-8 border border-[#F6DD26]/20 bg-[#1e293b]/90 backdrop-blur">
                         <div className="text-center mb-6">
-                            <h2 className="text-2xl font-bold text-white">Welcome Back</h2>
+                            <h2 className="text-2xl font-bold !text-white" style={{ color: 'white' }}>Sign In</h2>
                             <p className="text-gray-300 mt-2">Sign in to your account</p>
                         </div>
 
@@ -281,14 +283,14 @@ const App = () => {
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <FontAwesomeIcon icon={faEnvelope} className="text-gray-400" />
+                                        <FontAwesomeIcon icon={faEnvelope} className="text-gray-500" />
                                     </div>
                                     <input
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         required
-                                        className="input-field block w-full pl-10 pr-3 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6DD26] transition bg-[#2d0a0a] border-[#F6DD26]/30 text-white placeholder-gray-400"
+                                        className="block w-full pl-10 pr-3 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6DD26] transition bg-white border border-gray-300 text-gray-900 placeholder-gray-500"
                                         placeholder="Enter your email"
                                     />
                                 </div>
@@ -298,18 +300,18 @@ const App = () => {
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <FontAwesomeIcon icon={faLock} className="text-gray-400" />
+                                        <FontAwesomeIcon icon={faLock} className="text-gray-500" />
                                     </div>
                                     <input
                                         type={showPassword ? 'text' : 'password'}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         required
-                                        className="input-field block w-full pl-10 pr-10 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6DD26] transition bg-[#2d0a0a] border-[#F6DD26]/30 text-white placeholder-gray-400"
+                                        className="block w-full pl-10 pr-10 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6DD26] transition bg-white border border-gray-300 text-gray-900 placeholder-gray-500"
                                         placeholder="Enter your password"
                                     />
                                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                        <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} className="text-gray-400 hover:text-gray-300" />
+                                        <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} className="text-gray-500 hover:text-gray-700" />
                                     </button>
                                 </div>
                             </div>
@@ -320,15 +322,15 @@ const App = () => {
                                     value={role}
                                     onChange={(e) => setRole(e.target.value)}
                                     required
-                                    className="input-field block w-full px-3 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6DD26] transition bg-[#2d0a0a] border-[#F6DD26]/30 text-white"
+                                    className="block w-full px-3 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F6DD26] transition bg-white border border-gray-300 text-gray-900"
                                 >
-                                    <option value="" className="bg-[#2d0a0a] text-white">Select your role</option>
-                                    <option value="staff" className="bg-[#2d0a0a] text-white">Staff</option>
-                                    <option value="hod" className="bg-[#2d0a0a] text-white">Head of Department</option>
-                                    <option value="dean" className="bg-[#2d0a0a] text-white">Dean</option>
-                                    <option value="sar" className="bg-[#2d0a0a] text-white">Senior Assistant Registrar</option>
-                                    <option value="registrar" className="bg-[#2d0a0a] text-white">Registrar</option>
-                                    <option value="admin" className="bg-[#2d0a0a] text-white">Admin</option>
+                                    <option value="" className="text-gray-500">Select your role</option>
+                                    <option value="staff" className="text-gray-900">Staff</option>
+                                    <option value="hod" className="text-gray-900">Head of Department</option>
+                                    <option value="dean" className="text-gray-900">Dean</option>
+                                    <option value="sar" className="text-gray-900">Senior Assistant Registrar</option>
+                                    <option value="registrar" className="text-gray-900">Registrar</option>
+                                    <option value="admin" className="text-gray-900">Admin</option>
                                 </select>
                             </div>
 
@@ -367,6 +369,7 @@ const App = () => {
                                 <div>
                                     <h4 className="text-sm font-medium text-[#F6DD26] mb-2">Demo Accounts</h4>
                                     <div className="text-[10px] sm:text-xs text-gray-400 space-y-1">
+                                        <p><strong>Admin:</strong> admin@uok.lk / Admin@123</p>
                                         <p><strong>Registrar:</strong> registrar@uok.lk / Registrar@123</p>
                                         <p><strong>SAR:</strong> sar@uok.lk / Sar@123</p>
                                         <p><strong>HOD:</strong> hod@uok.lk / Hod@123</p>
@@ -429,7 +432,7 @@ const App = () => {
                     </div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 };
 

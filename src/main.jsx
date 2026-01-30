@@ -5,6 +5,8 @@ import App from './App.jsx'
 import Signup from './Signup.jsx'
 import Dashboard from './Dashboard.jsx'
 import VehicleManagement from './VehicleManagement.jsx'
+import DriverManagement from './DriverManagement.jsx'
+import MaintenanceManagement from './MaintenanceManagement.jsx'
 import UserManagement from './UserManagement.jsx'
 import SARDashboard from './SARDashboard.jsx'
 import VehicleReservation from './VehicleReservation.jsx'
@@ -12,6 +14,7 @@ import ReportsAnalytics from './ReportsAnalytics.jsx'
 import RegistrarDashboard from './RegistrarDashboard.jsx'
 import HODDashboard from './HODDashboard.jsx'
 import DeanDashboard from './DeanDashboard.jsx'
+import AdminDashboard from './AdminDashboard.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -19,9 +22,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<App />} />
+                <Route path="/login" element={<App />} />
                 <Route path="/signup.html" element={<Signup />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/vehicles" element={<VehicleManagement />} />
+                <Route path="/drivers" element={<DriverManagement />} />
+                <Route path="/maintenance" element={<MaintenanceManagement />} />
                 <Route path="/users" element={<UserManagement />} />
                 <Route path="/sar-dashboard" element={<SARDashboard />} />
                 <Route path="/reservation" element={<VehicleReservation />} />
@@ -29,6 +35,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <Route path="/registrar-dashboard" element={<RegistrarDashboard />} />
                 <Route path="/hod-dashboard" element={<HODDashboard />} />
                 <Route path="/dean-dashboard" element={<DeanDashboard />} />
+                <Route path="/admin-dashboard" element={<AdminDashboard />} />
             </Routes>
         </BrowserRouter>
     </React.StrictMode>,
