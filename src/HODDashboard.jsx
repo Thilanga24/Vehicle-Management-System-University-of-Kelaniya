@@ -192,6 +192,7 @@ const HODDashboard = () => {
                     {[
                         { id: 'dashboard', label: 'Overview', sub: 'Metrics & Stats', icon: 'fa-tachometer-alt' },
                         { id: 'pending-approvals', label: 'Pending Approvals', sub: 'Request Review', icon: 'fa-clock', badge: pendingRequests.length },
+                        { id: 'approved-reservations', label: 'Approved Reservations', sub: 'Status Overview', icon: 'fa-check-double' },
                         { id: 'reservations', label: 'Reservations', sub: 'Dept. Vehicles', icon: 'fa-calendar-alt' },
                         { id: 'department-staff', label: 'Staff Management', sub: 'Users & Activity', icon: 'fa-users' },
                         { id: 'reports', label: 'Reports', sub: 'Usage Reports', icon: 'fa-file-alt' },
@@ -430,8 +431,65 @@ const HODDashboard = () => {
                         </div>
                     )}
 
+                    {activeSection === 'approved-reservations' && (
+                        <div className="space-y-6 animation-fade-in">
+                            <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-lg p-6 text-white mb-6 shadow-lg flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-2xl font-bold mb-1">Approved Reservations</h2>
+                                    <p className="text-green-100 opacity-90">Overview of confirmed department requests</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-6">
+                                {reservations.filter(r => r.status === 'approved').length === 0 ? (
+                                    <div className="text-center py-20 bg-white rounded-xl border border-slate-200">
+                                        <i className="fas fa-calendar-check text-6xl text-gray-300 mb-4"></i>
+                                        <h3 className="text-xl font-bold text-gray-400">No Approved Reservations</h3>
+                                        <p className="text-gray-500">There are no approved requests at this time.</p>
+                                    </div>
+                                ) : (
+                                    reservations.filter(r => r.status === 'approved').map(req => (
+                                        <div key={req.reservation_id} className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-green-500">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-lg">
+                                                        {(req.first_name || 'S').charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-lg font-bold text-slate-800">{req.first_name} {req.last_name}</h3>
+                                                        <p className="text-sm text-slate-500">Department: {req.department || 'N/A'}</p>
+                                                    </div>
+                                                </div>
+                                                <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                                                    <i className="fas fa-check-circle mr-1"></i> Approved
+                                                </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-3 gap-4 mb-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                                <div>
+                                                    <p className="text-xs text-slate-400 uppercase font-bold">Destination</p>
+                                                    <p className="font-semibold text-slate-700">{req.destination}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-slate-400 uppercase font-bold">Date</p>
+                                                    <p className="font-semibold text-slate-700">{new Date(req.start_datetime).toLocaleDateString()} <span className="text-xs font-normal text-slate-500">at {new Date(req.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-slate-400 uppercase font-bold">Usage</p>
+                                                    <p className="font-semibold text-slate-700">{req.distance_km} km / {req.passengers_count} pax</p>
+                                                </div>
+                                            </div>
+
+                                            <p className="text-slate-600 italic pl-4 border-l-2 border-slate-300">"{req.description}"</p>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Placeholder for other sections */}
-                    {!['dashboard', 'pending-approvals'].includes(activeSection) && (
+                    {!['dashboard', 'pending-approvals', 'approved-reservations'].includes(activeSection) && (
                         <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-slate-200 animation-fade-in">
                             <i className={`fas ${activeSection === 'reservations' ? 'fa-calendar-alt' : activeSection === 'analytics' ? 'fa-chart-line' : 'fa-tools'} text-6xl text-slate-200 mb-6`}></i>
                             <h2 className="text-2xl font-bold text-slate-800 mb-2 capitalize">{activeSection.replace('-', ' ')}</h2>

@@ -187,6 +187,7 @@ const DeanDashboard = () => {
                     {[
                         { id: 'dashboard', label: 'Dashboard', sub: 'Overview & metrics', icon: 'fa-tachometer-alt' },
                         { id: 'pending-approvals', label: 'Approvals', sub: 'Request Review', icon: 'fa-file-signature', badge: pendingRequests.length },
+                        { id: 'approved-reservations', label: 'Approved Reservations', sub: 'Status Overview', icon: 'fa-check-double' },
                         { id: 'faculty-overview', label: 'Faculty Overview', sub: 'Faculty statistics', icon: 'fa-university' },
                         { id: 'departments', label: 'Departments', sub: 'Department management', icon: 'fa-building' },
                         { id: 'reports', label: 'Reports', sub: 'Faculty reports', icon: 'fa-chart-bar' },
@@ -395,6 +396,67 @@ const DeanDashboard = () => {
                                             {pendingRequests.length === 0 && (
                                                 <tr>
                                                     <td colSpan="4" className="text-center py-8 text-gray-400">No pending approvals found.</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Approved Reservations Module */}
+                    {activeSection === 'approved-reservations' && (
+                        <div className="animation-fade-in space-y-6">
+                            <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-lg p-6 text-white mb-6 shadow-lg flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-2xl font-bold mb-1">Approved Reservations</h2>
+                                    <p className="text-green-100 opacity-90">Overview of confirmed vehicle requests</p>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-50 border-b border-gray-200 text-gray-500 text-sm uppercase">
+                                                <th className="px-6 py-4 font-semibold">Requester</th>
+                                                <th className="px-6 py-4 font-semibold">Trip Details</th>
+                                                <th className="px-6 py-4 font-semibold">Date</th>
+                                                <th className="px-6 py-4 font-semibold text-right">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="text-sm divide-y divide-gray-100">
+                                            {reservations.filter(r => r.status === 'approved').map(req => (
+                                                <tr key={req.reservation_id} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">
+                                                                {(req.first_name || 'S').charAt(0)}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800">{req.first_name} {req.last_name}</p>
+                                                                <p className="text-xs text-gray-500">{req.department || 'N/A'}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <p className="font-medium text-slate-800">{req.destination}</p>
+                                                        <p className="text-xs text-gray-500 mt-1">{req.distance_km} km • {req.passengers_count} Pax</p>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {new Date(req.start_datetime).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+                                                            <i className="fas fa-check-circle mr-1"></i> Approved
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {reservations.filter(r => r.status === 'approved').length === 0 && (
+                                                <tr>
+                                                    <td colSpan="4" className="text-center py-8 text-gray-400">No approved reservations found.</td>
                                                 </tr>
                                             )}
                                         </tbody>

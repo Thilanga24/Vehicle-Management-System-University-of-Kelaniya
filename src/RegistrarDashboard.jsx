@@ -358,6 +358,7 @@ const RegistrarDashboard = () => {
                     {[
                         { id: 'overview', label: 'Dashboard', sub: 'Overview & Metrics', icon: 'fa-tachometer-alt' },
                         { id: 'longdistance', label: 'Approvals', sub: 'Trip Requests', icon: 'fa-file-signature' },
+                        { id: 'approved-reservations', label: 'Approved Reservations', sub: 'Status Overview', icon: 'fa-check-double' },
                     ].map(item => (
                         <div key={item.id}
                             className={`nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition ${activeTab === item.id ? 'active bg-white/10 text-yellow-400 border-l-4 border-yellow-400' : ''}`}
@@ -456,10 +457,48 @@ const RegistrarDashboard = () => {
                     {/* Content Rendering */}
                     {activeTab === 'overview' && renderOverview()}
                     {activeTab === 'longdistance' && renderApprovals()}
+                    {activeTab === 'approved-reservations' && (
+                        <div className="animation-fade-in card-gradient p-6 rounded-xl">
+                            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <i className="fas fa-check-double text-green-600"></i> Approved Reservations
+                            </h2>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                        <tr>
+                                            <th className="px-4 py-3">Request ID</th>
+                                            <th className="px-4 py-3">Department</th>
+                                            <th className="px-4 py-3">Destination</th>
+                                            <th className="px-4 py-3">Date</th>
+                                            <th className="px-4 py-3 text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {reservations.filter(r => r.status === 'approved').map(req => (
+                                            <tr key={req.reservation_id} className="hover:bg-slate-50 transition">
+                                                <td className="px-4 py-3 font-medium text-slate-700">{req.reservation_id}</td>
+                                                <td className="px-4 py-3 text-slate-600">{req.department || 'N/A'}</td>
+                                                <td className="px-4 py-3 text-slate-600">{req.destination}</td>
+                                                <td className="px-4 py-3 text-slate-600">{new Date(req.start_datetime).toLocaleDateString()}</td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                                        <i className="fas fa-check-circle"></i> Approved
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {reservations.filter(r => r.status === 'approved').length === 0 && (
+                                            <tr><td colSpan="5" className="px-4 py-8 text-center text-slate-400">No approved reservations found.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
                     {activeTab === 'fleet' && renderFleet()}
 
                     {/* Other tabs placeholders */}
-                    {!['overview', 'longdistance', 'fleet'].includes(activeTab) && (
+                    {!['overview', 'longdistance', 'fleet', 'approved-reservations'].includes(activeTab) && (
                         <div className="card-gradient p-10 rounded-xl text-center">
                             <i className="fas fa-wrench text-6xl text-slate-300 mb-6"></i>
                             <h2 className="text-2xl font-bold text-slate-700">Under Maintenance</h2>

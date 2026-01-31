@@ -130,6 +130,7 @@ const SARDashboard = () => {
                     {[
                         { id: 'dashboard', label: 'Dashboard', sub: 'Overview & metrics', icon: 'fa-tachometer-alt' },
                         { id: 'approvals', label: 'Approvals', sub: 'Request Review', icon: 'fa-file-signature' },
+                        { id: 'approved-reservations', label: 'Approved Reservations', sub: 'Status Overview', icon: 'fa-check-double' },
 
                     ].map(item => (
                         <div
@@ -417,8 +418,66 @@ const SARDashboard = () => {
                     </div>
                 )}
 
+                {/* Approved Reservations Module */}
+                {activeSection === 'approved-reservations' && (
+                    <div className="animation-fade-in space-y-6">
+                        <div className="sar-card-gradient p-6 rounded-xl">
+                            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                                <i className="fas fa-check-double text-green-500"></i> Approved Reservations
+                            </h2>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-gray-200 text-gray-500 text-sm uppercase">
+                                            <th className="px-4 py-3 font-semibold">Request Details</th>
+                                            <th className="px-4 py-3 font-semibold">Route & Vehicle</th>
+                                            <th className="px-4 py-3 font-semibold">Date & Time</th>
+                                            <th className="px-4 py-3 font-semibold text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-sm divide-y divide-gray-100">
+                                        {reservations.filter(r => r.status === 'approved').map(req => (
+                                            <tr key={req.reservation_id} className="hover:bg-slate-50 transition-colors">
+                                                <td className="px-4 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold">
+                                                            {(req.first_name || 'S').charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-slate-800">{req.first_name} {req.last_name}</p>
+                                                            <p className="text-xs text-gray-500">{req.department || 'N/A'} • {req.reservation_id}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <p className="text-slate-800 font-medium"><i className="fas fa-map-marker-alt text-slate-400 mr-1"></i> {req.destination}</p>
+                                                    <p className="text-xs text-gray-500 mt-1">{req.model || 'Vehicle Pending'} • {req.passengers_count} Pax</p>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <p className="text-slate-800">{new Date(req.start_datetime).toLocaleDateString()}</p>
+                                                    <p className="text-xs text-gray-500">{new Date(req.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                                </td>
+                                                <td className="px-4 py-4 text-right">
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                                        <i className="fas fa-check-circle"></i> Approved
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {reservations.filter(r => r.status === 'approved').length === 0 && (
+                                            <tr>
+                                                <td colSpan="4" className="text-center py-10 text-gray-400">No approved reservations found.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Other Modules Placeholder */}
-                {!['dashboard', 'approvals'].includes(activeSection) && (
+                {!['dashboard', 'approvals', 'approved-reservations'].includes(activeSection) && (
                     <div className="animation-fade-in sar-card-gradient p-10 rounded-xl text-center">
                         <i className={`fas ${activeSection === 'vehicles' ? 'fa-car' :
                             activeSection === 'drivers' ? 'fa-users' :
