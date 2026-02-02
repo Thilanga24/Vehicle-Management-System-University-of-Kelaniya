@@ -41,6 +41,8 @@ const VehicleManagement = () => {
         seatingCapacity: '', fuelType: '', mileage: '', status: 'available',
         driverId: '', notes: ''
     });
+    const [maintenanceRecords, setMaintenanceRecords] = useState([]);
+    const [selectedMaintenance, setSelectedMaintenance] = useState(null);
 
     const [notification, setNotification] = useState({ message: '', type: '', visible: false });
 
@@ -60,6 +62,19 @@ const VehicleManagement = () => {
             }
         } catch (error) {
             console.error("Error fetching drivers:", error);
+        }
+    };
+
+    // Fetch maintenance records
+    const fetchMaintenance = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/maintenance');
+            const data = await response.json();
+            if (response.ok) {
+                setMaintenanceRecords(data);
+            }
+        } catch (error) {
+            console.error("Error fetching maintenance:", error);
         }
     };
 
@@ -94,6 +109,7 @@ const VehicleManagement = () => {
     useEffect(() => {
         fetchVehicles();
         fetchDrivers();
+        fetchMaintenance();
     }, []);
 
     const handleInputChange = (e) => {
@@ -160,11 +176,6 @@ const VehicleManagement = () => {
         setActiveSection('vehicle-list');
     };
 
-    const maintenanceRecords = [
-        { vehicle: 'KI-1234', service: 'Oil Change', date: '2024-10-01', cost: 'Rs. 5,000', status: 'Completed' },
-        { vehicle: 'KI-5678', service: 'Brake Service', date: '2024-09-28', cost: 'Rs. 15,000', status: 'Completed' },
-        { vehicle: 'KI-9012', service: 'Engine Repair', date: '2024-10-10', cost: 'Rs. 45,000', status: 'In Progress' }
-    ];
 
     const insuranceRecords = [
         { vehicle: 'KI-1234', company: 'SLIC', policy: 'POL001234', expiry: '2025-05-15', premium: 'Rs. 25,000', status: 'Active' },
@@ -215,6 +226,73 @@ const VehicleManagement = () => {
     }, [navigate]);
 
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
+    const renderMaintenanceModal = () => {
+        if (!selectedMaintenance) return null;
+
+        return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedMaintenance(null)}></div>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl z-10 overflow-hidden animation-pop-in">
+                    <div className="bg-maroon p-6 text-white flex justify-between items-center">
+                        <div>
+                            <h3 className="text-xl font-bold">Maintenance Details</h3>
+                            <p className="text-maroon-light text-sm opacity-80">{selectedMaintenance.registration_number} • {selectedMaintenance.service_type}</p>
+                        </div>
+                        <button onClick={() => setSelectedMaintenance(null)} className="text-white hover:bg-white/10 p-2 rounded-full transition-colors">
+                            <i className="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+
+                    <div className="p-8 space-y-8">
+                        <div className="grid grid-cols-2 gap-8">
+                            <div>
+                                <label className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Service Date</label>
+                                <p className="text-slate-800 font-medium">{new Date(selectedMaintenance.service_date).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Status</label>
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${selectedMaintenance.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                    {selectedMaintenance.status.replace('_', ' ')}
+                                </span>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Garage / Service Center</label>
+                                <p className="text-slate-800 font-medium">{selectedMaintenance.garage_name || 'Not Specified'}</p>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Final Cost</label>
+                                <p className="text-slate-800 font-bold text-lg">LKR {selectedMaintenance.cost?.toLocaleString() || '0'}</p>
+                            </div>
+                        </div>
+
+                        <div className="border-t border-slate-100 pt-6">
+                            <label className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2">Issue / Service Description</label>
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">
+                                {selectedMaintenance.issue_description || 'No description provided.'}
+                            </div>
+                        </div>
+
+                        {selectedMaintenance.completion_date && (
+                            <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-50 p-3 rounded-lg">
+                                <i className="fas fa-info-circle"></i>
+                                <span>Completed on {new Date(selectedMaintenance.completion_date).toLocaleDateString()}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="bg-slate-50 p-6 flex justify-end">
+                        <button
+                            onClick={() => setSelectedMaintenance(null)}
+                            className="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold transition-colors"
+                        >
+                            Close Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     const backToDashboard = () => {
         const role = sessionStorage.getItem('userRole');
@@ -569,20 +647,37 @@ const VehicleManagement = () => {
                                     <tbody className="divide-y divide-slate-100">
                                         {maintenanceRecords.map((rec, i) => (
                                             <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                                <td className="p-4 font-medium text-slate-800">{rec.vehicle}</td>
-                                                <td className="p-4 text-slate-600">{rec.service}</td>
-                                                <td className="p-4 text-slate-500">{rec.date}</td>
-                                                <td className="p-4 font-medium text-slate-800">{rec.cost}</td>
+                                                <td className="p-4 font-medium text-slate-800">{rec.registration_number}</td>
+                                                <td className="p-4 text-slate-600">
+                                                    <div>{rec.service_type}</div>
+                                                    <div className="text-xs text-slate-400 truncate max-w-xs">{rec.issue_description}</div>
+                                                </td>
+                                                <td className="p-4 text-slate-500">{new Date(rec.service_date).toLocaleDateString()}</td>
+                                                <td className="p-4 font-medium text-slate-800">LKR {rec.cost?.toLocaleString()}</td>
                                                 <td className="p-4">
-                                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${rec.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                                        {rec.status}
+                                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${rec.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                        rec.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                                            rec.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
+                                                                'bg-yellow-100 text-yellow-800'
+                                                        }`}>
+                                                        {rec.status.replace('_', ' ').charAt(0).toUpperCase() + rec.status.replace('_', ' ').slice(1)}
                                                     </span>
                                                 </td>
                                                 <td className="p-4">
-                                                    <button className="text-blue-600 hover:text-blue-800 font-medium text-sm">View Details</button>
+                                                    <button
+                                                        onClick={() => setSelectedMaintenance(rec)}
+                                                        className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1"
+                                                    >
+                                                        <i className="fas fa-eye"></i> View Details
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}
+                                        {maintenanceRecords.length === 0 && (
+                                            <tr>
+                                                <td colSpan="6" className="p-8 text-center text-slate-400">No maintenance records found.</td>
+                                            </tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -696,6 +791,7 @@ const VehicleManagement = () => {
 
                 </div>
             </div>
+            {renderMaintenanceModal()}
         </div>
     );
 };

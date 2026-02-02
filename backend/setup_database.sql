@@ -90,7 +90,34 @@ CREATE TABLE reservations (
     FOREIGN KEY (vehicle_id) REFERENCES vehicles(vehicle_id) ON DELETE
     SET NULL
 );
--- 6. Insert Default Admin User (Optional)
+-- 6. Create Maintenance Records Table
+CREATE TABLE IF NOT EXISTS maintenance_records (
+    record_id INT AUTO_INCREMENT PRIMARY KEY,
+    vehicle_id INT NOT NULL,
+    reported_by_user_id INT NULL,
+    service_type ENUM(
+        'Routine Service',
+        'Repair',
+        'Inspection',
+        'Emergency'
+    ) NOT NULL,
+    issue_description TEXT,
+    priority ENUM('low', 'medium', 'high', 'critical') DEFAULT 'low',
+    service_date DATE NOT NULL,
+    completion_date DATE NULL,
+    garage_name VARCHAR(100),
+    cost DECIMAL(10, 2) DEFAULT 0.00,
+    status ENUM(
+        'scheduled',
+        'in_progress',
+        'completed',
+        'cancelled'
+    ) DEFAULT 'scheduled',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(vehicle_id) ON DELETE CASCADE,
+    FOREIGN KEY (reported_by_user_id) REFERENCES users(user_id)
+);
+-- 7. Insert Default Admin User (Optional)
 -- Password is 'password123' (hashed)
 INSERT INTO users (
         first_name,
