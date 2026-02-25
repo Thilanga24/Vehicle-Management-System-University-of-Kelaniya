@@ -10,6 +10,12 @@ const SARDashboard = () => {
 
     const [reservations, setReservations] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [notification, setNotification] = useState({ show: false, message: '', type: 'info' });
+
+    const showNotification = (message, type = 'info') => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => setNotification({ show: false, message: '', type: 'info' }), 4000);
+    };
 
     const fetchReservations = async () => {
         try {
@@ -98,17 +104,17 @@ const SARDashboard = () => {
             if (response.ok) {
                 let message = '';
                 if (action === 'approve') message = `Request ${selectedRequest.id} Approved.`;
-                if (action === 'forward') message = `Request ${selectedRequest.id} Forwarded to Registrar.`;
-                if (action === 'reject') message = `Request ${selectedRequest.id} Rejected.`;
+                else if (action === 'forward') message = `Request ${selectedRequest.id} Forwarded to Registrar.`;
+                else if (action === 'reject') message = `Request ${selectedRequest.id} Rejected.`;
 
-                alert(message);
+                showNotification(message, 'success');
                 fetchReservations();
             } else {
-                alert('Failed to update status');
+                showNotification('Failed to update status', 'error');
             }
         } catch (error) {
             console.error('SAR Approval Error:', error);
-            alert('Error processing request');
+            showNotification('Error processing request', 'error');
         }
 
         setShowApprovalModal(false);
@@ -203,7 +209,32 @@ const SARDashboard = () => {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 lg:ml-80 flex flex-col min-h-screen bg-slate-50 text-slate-800 p-8">
+            <div className="flex-1 lg:ml-80 flex flex-col min-h-screen bg-slate-50 text-slate-800 p-8 relative">
+
+                {/* Notification Toast */}
+                {notification.show && (
+                    <div className={`fixed top-6 right-6 z-[100] flex items-center gap-3 p-4 rounded-xl shadow-2xl border-l-4 transition-all duration-300 animate-fade-in ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-500 text-emerald-800' :
+                        notification.type === 'error' ? 'bg-red-50 border-red-500 text-red-800' :
+                            'bg-blue-50 border-blue-500 text-blue-800'
+                        }`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notification.type === 'success' ? 'bg-emerald-500 text-white' :
+                            notification.type === 'error' ? 'bg-red-500 text-white' :
+                                'bg-blue-500 text-white'
+                            }`}>
+                            <i className={`fas ${notification.type === 'success' ? 'fa-check' :
+                                notification.type === 'error' ? 'fa-exclamation-triangle' :
+                                    'fa-info'
+                                }`}></i>
+                        </div>
+                        <div className="flex-1 pr-4">
+                            <p className="font-bold text-sm uppercase">System Status</p>
+                            <p className="text-sm font-medium">{notification.message}</p>
+                        </div>
+                        <button onClick={() => setNotification({ ...notification, show: false })} className="text-gray-400 hover:text-gray-600 transition">
+                            <i className="fas fa-times"></i>
+                        </button>
+                    </div>
+                )}
                 {/* Header */}
                 <div className="flex justify-between items-center mb-8">
                     <div>

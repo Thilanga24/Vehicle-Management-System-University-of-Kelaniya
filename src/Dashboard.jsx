@@ -9,6 +9,13 @@ const Dashboard = () => {
     const [availabilityDate, setAvailabilityDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
     const [reservations, setReservations] = useState([]);
+    const [notification, setNotification] = useState({ show: false, message: '', type: 'info' });
+    const [showEmergencySuccess, setShowEmergencySuccess] = useState(false);
+
+    const showNotification = (message, type = 'info') => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => setNotification({ show: false, message: '', type: 'info' }), 4000);
+    };
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{"name": "Staff Member", "role": "staff"}');
 
     const fetchReservations = async () => {
@@ -74,10 +81,17 @@ const Dashboard = () => {
             });
 
             if (response.ok) {
-                alert('CRITICAL: Emergency request submitted successfully. Administration has been notified.');
+                setShowEmergencySuccess(true);
+                showNotification('CRITICAL: Emergency request submitted successfully. Administration has been notified.', 'success');
                 setEmergencyForm({ nature: 'Medical Emergency', isImmediate: true, description: '' });
+                fetchReservations(); // REFRESH THE LIST
+                // Don't auto-switch tab immediately, let them see the success message
+                setTimeout(() => {
+                    setShowEmergencySuccess(false);
+                    setActiveTab('reservations-tab');
+                }, 5000);
             } else {
-                alert('Failed to submit emergency request. Please contact 011-2903903 immediately.');
+                showNotification('Failed to submit emergency request. Please contact 011-2903903 immediately.', 'error');
             }
         } catch (error) {
             console.error('Emergency Submit Error:', error);
@@ -105,10 +119,7 @@ const Dashboard = () => {
         // Map sidebar highlighting logic if needed, but we can just simplify
     };
 
-    const showNotification = (message, type = 'info') => {
-        // Simple alert for now, effectively replacing the DOM-based notification
-        alert(`${type.toUpperCase()}: ${message}`);
-    };
+    const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
     const updateAvailability = () => {
         setLoading(true);
@@ -118,8 +129,6 @@ const Dashboard = () => {
             showNotification(`Vehicle availability updated for ${availabilityDate}`, 'success');
         }, 800);
     };
-
-    const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
     return (
         <div className="dashboard-container">
@@ -191,6 +200,31 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Notification Toast */}
+            {notification.show && (
+                <div className={`fixed top-6 right-6 z-[100] flex items-center gap-3 p-4 rounded-xl shadow-2xl border-l-4 transition-all duration-300 animate-fade-in ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-500 text-emerald-800' :
+                    notification.type === 'error' ? 'bg-red-50 border-red-500 text-red-800' :
+                        'bg-blue-50 border-blue-500 text-blue-800'
+                    }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notification.type === 'success' ? 'bg-emerald-500 text-white' :
+                        notification.type === 'error' ? 'bg-red-500 text-white' :
+                            'bg-blue-500 text-white'
+                        }`}>
+                        <i className={`fas ${notification.type === 'success' ? 'fa-check' :
+                            notification.type === 'error' ? 'fa-exclamation-triangle' :
+                                'fa-info'
+                            }`}></i>
+                    </div>
+                    <div className="flex-1 pr-4">
+                        <p className="font-bold text-sm uppercase">System Update</p>
+                        <p className="text-sm font-medium">{notification.message}</p>
+                    </div>
+                    <button onClick={() => setNotification({ ...notification, show: false })} className="text-gray-400 hover:text-gray-600 transition">
+                        <i className="fas fa-times"></i>
+                    </button>
+                </div>
+            )}
 
             {/* Main Content */}
             <div className="main-content">
@@ -358,59 +392,76 @@ const Dashboard = () => {
                                     <i className="fas fa-info-circle mr-2"></i>
                                     <strong>High Priority:</strong> This request will be immediately flagged to the Registrar, SAR, and Dean given the urgency. Please use this only for genuine emergencies.
                                 </div>
-                                <form className="space-y-4" onSubmit={handleEmergencySubmit}>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Nature of Emergency</label>
-                                            <select
-                                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                                                value={emergencyForm.nature}
-                                                onChange={(e) => setEmergencyForm({ ...emergencyForm, nature: e.target.value })}
-                                            >
-                                                <option>Medical Emergency</option>
-                                                <option>Security Incident</option>
-                                                <option>Critical Infrastructure Failure</option>
-                                                <option>Other</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Required Immediately?</label>
-                                            <div className="flex items-center space-x-4 mt-2">
-                                                <label className="flex items-center">
-                                                    <input
-                                                        type="radio"
-                                                        name="immediate"
-                                                        className="mr-2"
-                                                        checked={emergencyForm.isImmediate}
-                                                        onChange={() => setEmergencyForm({ ...emergencyForm, isImmediate: true })}
-                                                    /> Yes
-                                                </label>
-                                                <label className="flex items-center">
-                                                    <input
-                                                        type="radio"
-                                                        name="immediate"
-                                                        className="mr-2"
-                                                        checked={!emergencyForm.isImmediate}
-                                                        onChange={() => setEmergencyForm({ ...emergencyForm, isImmediate: false })}
-                                                    /> No (Specify Time)
-                                                </label>
+                                {!showEmergencySuccess ? (
+                                    <form className="space-y-4" onSubmit={handleEmergencySubmit}>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-semibold text-gray-700 mb-1">Nature of Emergency</label>
+                                                <select
+                                                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                                    value={emergencyForm.nature}
+                                                    onChange={(e) => setEmergencyForm({ ...emergencyForm, nature: e.target.value })}
+                                                >
+                                                    <option>Medical Emergency</option>
+                                                    <option>Security Incident</option>
+                                                    <option>Critical Infrastructure Failure</option>
+                                                    <option>Other</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-semibold text-gray-700 mb-1">Required Immediately?</label>
+                                                <div className="flex items-center space-x-4 mt-2">
+                                                    <label className="flex items-center">
+                                                        <input
+                                                            type="radio"
+                                                            name="immediate"
+                                                            className="mr-2"
+                                                            checked={emergencyForm.isImmediate}
+                                                            onChange={() => setEmergencyForm({ ...emergencyForm, isImmediate: true })}
+                                                        /> Yes
+                                                    </label>
+                                                    <label className="flex items-center">
+                                                        <input
+                                                            type="radio"
+                                                            name="immediate"
+                                                            className="mr-2"
+                                                            checked={!emergencyForm.isImmediate}
+                                                            onChange={() => setEmergencyForm({ ...emergencyForm, isImmediate: false })}
+                                                        /> No (Specify Time)
+                                                    </label>
+                                                </div>
                                             </div>
                                         </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Description / Location</label>
+                                            <textarea
+                                                rows="3"
+                                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                                placeholder="Please describe the situation and pickup location..."
+                                                value={emergencyForm.description}
+                                                onChange={(e) => setEmergencyForm({ ...emergencyForm, description: e.target.value })}
+                                            ></textarea>
+                                        </div>
+                                        <button type="submit" disabled={loading} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded shadow-lg transition disabled:opacity-50">
+                                            <i className={`fas fa-paper-plane mr-2 ${loading ? 'animate-pulse' : ''}`}></i> {loading ? 'Sending...' : 'Submit Emergency Request'}
+                                        </button>
+                                    </form>
+                                ) : (
+                                    <div className="mt-6 flex flex-col items-center justify-center p-8 bg-emerald-50 rounded-xl shadow-inner border border-emerald-100 text-center animate-fade-in">
+                                        <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mb-4 text-white text-2xl animate-bounce">
+                                            <i className="fas fa-check"></i>
+                                        </div>
+                                        <h3 className="text-xl font-bold text-emerald-800 mb-2">Request Transmitted!</h3>
+                                        <p className="text-emerald-700 text-sm mb-4">
+                                            Your emergency request has been prioritized and dispatched to the Registrar's office.
+                                            Help is being coordinated.
+                                        </p>
+                                        <div className="flex items-center gap-2 text-xs font-medium text-emerald-600">
+                                            <i className="fas fa-spinner fa-spin"></i>
+                                            Redirecting to My Reservations...
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Description / Location</label>
-                                        <textarea
-                                            rows="3"
-                                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                                            placeholder="Please describe the situation and pickup location..."
-                                            value={emergencyForm.description}
-                                            onChange={(e) => setEmergencyForm({ ...emergencyForm, description: e.target.value })}
-                                        ></textarea>
-                                    </div>
-                                    <button type="submit" disabled={loading} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded shadow-lg transition disabled:opacity-50">
-                                        <i className={`fas fa-paper-plane mr-2 ${loading ? 'animate-pulse' : ''}`}></i> {loading ? 'Sending...' : 'Submit Emergency Request'}
-                                    </button>
-                                </form>
+                                )}
                             </div>
                         </div>
                     )}
@@ -435,7 +486,7 @@ const Dashboard = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {reservations.filter(r => r.requester_id === currentUser.id && r.status !== 'completed' && r.status !== 'rejected').map(r => (
+                                        {reservations.filter(r => String(r.requester_id) === String(currentUser.id) && r.status !== 'completed' && r.status !== 'rejected').map(r => (
                                             <tr key={r.reservation_id}>
                                                 <td><strong>REQ-{r.reservation_id}</strong></td>
                                                 <td>{new Date(r.start_datetime).toLocaleDateString()}</td>
@@ -449,7 +500,7 @@ const Dashboard = () => {
                                                 <td>{r.model ? `${r.model} (${r.registration_number})` : 'To Be Assigned'}</td>
                                             </tr>
                                         ))}
-                                        {reservations.filter(r => r.requester_id === currentUser.id && r.status !== 'completed' && r.status !== 'rejected').length === 0 && (
+                                        {reservations.filter(r => String(r.requester_id) === String(currentUser.id) && r.status !== 'completed' && r.status !== 'rejected').length === 0 && (
                                             <tr><td colSpan="6" className="text-center p-4 text-gray-500">No upcoming reservations found.</td></tr>
                                         )}
                                     </tbody>
@@ -478,7 +529,7 @@ const Dashboard = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {reservations.filter(r => r.requester_id === currentUser.id && r.status === 'pending').map(r => (
+                                        {reservations.filter(r => String(r.requester_id) === String(currentUser.id) && (r.status === 'pending' || r.status.startsWith('pending_'))).map(r => (
                                             <tr key={r.reservation_id}>
                                                 <td><strong>REQ-{r.reservation_id}</strong></td>
                                                 <td>{new Date(r.start_datetime).toLocaleDateString()}</td>
@@ -493,7 +544,7 @@ const Dashboard = () => {
                                                 </td>
                                             </tr>
                                         ))}
-                                        {reservations.filter(r => r.requester_id === currentUser.id && r.status === 'pending').length === 0 && (
+                                        {reservations.filter(r => String(r.requester_id) === String(currentUser.id) && (r.status === 'pending' || r.status.startsWith('pending_'))).length === 0 && (
                                             <tr><td colSpan="6" className="text-center p-4 text-gray-500">No pending approvals found.</td></tr>
                                         )}
                                     </tbody>
@@ -520,7 +571,7 @@ const Dashboard = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {reservations.filter(r => r.requester_id === currentUser.id && (r.status === 'completed' || r.status === 'rejected')).map(r => (
+                                        {reservations.filter(r => String(r.requester_id) === String(currentUser.id) && (r.status === 'completed' || r.status === 'rejected')).map(r => (
                                             <tr key={r.reservation_id}>
                                                 <td>{new Date(r.start_datetime).toLocaleDateString()}</td>
                                                 <td>{r.destination}</td>
@@ -535,7 +586,7 @@ const Dashboard = () => {
                                                 </td>
                                             </tr>
                                         ))}
-                                        {reservations.filter(r => r.requester_id === currentUser.id && (r.status === 'completed' || r.status === 'rejected')).length === 0 && (
+                                        {reservations.filter(r => String(r.requester_id) === String(currentUser.id) && (r.status === 'completed' || r.status === 'rejected')).length === 0 && (
                                             <tr><td colSpan="5" className="text-center p-4 text-gray-500">No past booking history found.</td></tr>
                                         )}
                                     </tbody>
@@ -689,7 +740,7 @@ const Dashboard = () => {
 
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

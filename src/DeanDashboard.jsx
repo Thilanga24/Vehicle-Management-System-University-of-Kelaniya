@@ -12,6 +12,12 @@ const DeanDashboard = () => {
     // --- State for Data ---
     const [reservations, setReservations] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [notification, setNotification] = useState({ show: false, message: '', type: 'info' });
+
+    const showNotification = (message, type = 'info') => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => setNotification({ show: false, message: '', type: 'info' }), 4000);
+    };
 
     const fetchReservations = async () => {
         try {
@@ -127,14 +133,14 @@ const DeanDashboard = () => {
                 if (decision === 'approved' && selectedRequest.distance > 100) {
                     message += ' Forwarded to SAR/Registrar (Distance > 100km).';
                 }
-                alert(message);
+                showNotification(message, 'success');
                 fetchReservations();
             } else {
-                alert('Failed to update status');
+                showNotification('Failed to update status', 'error');
             }
         } catch (error) {
             console.error('Approval Error:', error);
-            alert('Error processing approval');
+            showNotification('Error processing approval', 'error');
         }
 
         setShowModal(false);
@@ -220,7 +226,31 @@ const DeanDashboard = () => {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 lg:ml-80 flex flex-col min-h-screen">
+            <div className="flex-1 lg:ml-80 flex flex-col min-h-screen relative">
+                {/* Notification Toast */}
+                {notification.show && (
+                    <div className={`fixed top-6 right-6 z-[100] flex items-center gap-3 p-4 rounded-xl shadow-2xl border-l-4 transition-all duration-300 animate-fade-in ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-500 text-emerald-800' :
+                        notification.type === 'error' ? 'bg-red-50 border-red-500 text-red-800' :
+                            'bg-blue-50 border-blue-500 text-blue-800'
+                        }`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notification.type === 'success' ? 'bg-emerald-500 text-white' :
+                            notification.type === 'error' ? 'bg-red-500 text-white' :
+                                'bg-blue-500 text-white'
+                            }`}>
+                            <i className={`fas ${notification.type === 'success' ? 'fa-check' :
+                                notification.type === 'error' ? 'fa-exclamation-triangle' :
+                                    'fa-info'
+                                }`}></i>
+                        </div>
+                        <div className="flex-1 pr-4">
+                            <p className="font-bold text-sm uppercase">System Status</p>
+                            <p className="text-sm font-medium">{notification.message}</p>
+                        </div>
+                        <button onClick={() => setNotification({ ...notification, show: false })} className="text-slate-400 hover:text-slate-600 transition">
+                            <i className="fas fa-times"></i>
+                        </button>
+                    </div>
+                )}
                 {/* Header */}
                 <header className="bg-white border-b border-gray-200 px-8 py-5 sticky top-0 z-30 shadow-sm">
                     <div className="flex items-center justify-between">

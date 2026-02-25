@@ -76,6 +76,12 @@ const RegistrarDashboard = () => {
 
     const [reservations, setReservations] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [notification, setNotification] = useState({ show: false, message: '', type: 'info' });
+
+    const showNotification = (message, type = 'info') => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => setNotification({ show: false, message: '', type: 'info' }), 4000);
+    };
 
     const fetchReservations = async () => {
         try {
@@ -154,14 +160,14 @@ const RegistrarDashboard = () => {
             });
 
             if (response.ok) {
-                alert(`Request #${id} ${action === 'approve' ? 'Approved' : 'Rejected'} Successfully.`);
+                showNotification(`Request #${id} ${action === 'approve' ? 'Approved' : 'Rejected'} Successfully.`, 'success');
                 fetchReservations();
             } else {
-                alert('Failed to update status');
+                showNotification('Failed to update status', 'error');
             }
         } catch (error) {
             console.error('Registrar Action Error:', error);
-            alert('Error processing request');
+            showNotification('Error processing request', 'error');
         }
         handleModalClose();
     };
@@ -423,7 +429,31 @@ const RegistrarDashboard = () => {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 lg:ml-80 flex flex-col min-h-screen bg-slate-50 text-slate-800">
+            <div className="flex-1 lg:ml-80 flex flex-col min-h-screen bg-slate-50 text-slate-800 relative">
+                {/* Notification Toast */}
+                {notification.show && (
+                    <div className={`fixed top-6 right-6 z-[100] flex items-center gap-3 p-4 rounded-xl shadow-2xl border-l-4 transition-all duration-300 animate-fade-in ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-500 text-emerald-800' :
+                            notification.type === 'error' ? 'bg-red-50 border-red-500 text-red-800' :
+                                'bg-blue-50 border-blue-500 text-blue-800'
+                        }`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notification.type === 'success' ? 'bg-emerald-500 text-white' :
+                                notification.type === 'error' ? 'bg-red-500 text-white' :
+                                    'bg-blue-500 text-white'
+                            }`}>
+                            <i className={`fas ${notification.type === 'success' ? 'fa-check' :
+                                    notification.type === 'error' ? 'fa-exclamation-triangle' :
+                                        'fa-info'
+                                }`}></i>
+                        </div>
+                        <div className="flex-1 pr-4">
+                            <p className="font-bold text-sm uppercase">System Status</p>
+                            <p className="text-sm font-medium">{notification.message}</p>
+                        </div>
+                        <button onClick={() => setNotification({ ...notification, show: false })} className="text-slate-400 hover:text-slate-600 transition">
+                            <i className="fas fa-times"></i>
+                        </button>
+                    </div>
+                )}
                 <div className="p-8 flex-1 overflow-y-auto">
                     {/* Header */}
                     <div className="flex justify-between items-center mb-8">
