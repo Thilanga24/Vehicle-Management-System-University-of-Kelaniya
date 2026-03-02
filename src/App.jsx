@@ -62,6 +62,8 @@ const App = () => {
             navigate('/dean-dashboard');
         } else if (role === 'admin') {
             navigate('/admin-dashboard');
+        } else if (role === 'management_assistant') {
+            navigate('/management-dashboard');
         } else {
             navigate('/dashboard');
         }

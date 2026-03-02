@@ -71,6 +71,9 @@ const HODDashboard = () => {
                 passengers: r.passengers_count,
                 distance: r.distance_km,
                 purpose: r.description,
+                remarks: r.remarks,
+                attachment_url: r.attachment_url,
+                emergency_contact: r.emergency_contact,
                 submittedAt: new Date(r.created_at).toLocaleDateString()
             };
         });
@@ -236,16 +239,16 @@ const HODDashboard = () => {
                 {/* Notification Toast */}
                 {notification.show && (
                     <div className={`fixed top-6 right-6 z-[100] flex items-center gap-3 p-4 rounded-xl shadow-2xl border-l-4 transition-all duration-300 animate-fade-in ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-500 text-emerald-800' :
-                            notification.type === 'error' ? 'bg-red-50 border-red-500 text-red-800' :
-                                'bg-blue-50 border-blue-500 text-blue-800'
+                        notification.type === 'error' ? 'bg-red-50 border-red-500 text-red-800' :
+                            'bg-blue-50 border-blue-500 text-blue-800'
                         }`}>
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${notification.type === 'success' ? 'bg-emerald-500 text-white' :
-                                notification.type === 'error' ? 'bg-red-500 text-white' :
-                                    'bg-blue-500 text-white'
+                            notification.type === 'error' ? 'bg-red-500 text-white' :
+                                'bg-blue-500 text-white'
                             }`}>
                             <i className={`fas ${notification.type === 'success' ? 'fa-check' :
-                                    notification.type === 'error' ? 'fa-exclamation-triangle' :
-                                        'fa-info'
+                                notification.type === 'error' ? 'fa-exclamation-triangle' :
+                                    'fa-info'
                                 }`}></i>
                         </div>
                         <div className="flex-1 pr-4">
@@ -576,6 +579,26 @@ const HODDashboard = () => {
                                     <p className="text-slate-500 text-sm font-medium mb-1">Purpose</p>
                                     <p className="text-slate-700 italic bg-gray-50 p-2 rounded border-l-2 border-gray-300">"{currentRequest.purpose}"</p>
                                 </div>
+                                {currentRequest.remarks && (
+                                    <div className="col-span-2">
+                                        <p className="text-slate-500 text-sm font-medium mb-1">Remarks</p>
+                                        <p className="text-slate-700 bg-gray-50 p-2 rounded border-l-2 border-gray-300">{currentRequest.remarks}</p>
+                                    </div>
+                                )}
+                                {currentRequest.emergency_contact && (
+                                    <div className="col-span-2">
+                                        <p className="text-slate-500 text-sm font-medium mb-1">Emergency Contact</p>
+                                        <p className="text-slate-700 bg-gray-50 p-2 rounded border-l-2 border-gray-300">{currentRequest.emergency_contact}</p>
+                                    </div>
+                                )}
+                                {currentRequest.attachment_url && (
+                                    <div className="col-span-2 mt-2">
+                                        <p className="text-slate-500 text-sm font-medium mb-1">Attachment</p>
+                                        <a href={`http://localhost:5000${currentRequest.attachment_url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-2">
+                                            <i className="fas fa-paperclip"></i> View Attached Document
+                                        </a>
+                                    </div>
+                                )}
                             </div>
 
                             <hr className="border-slate-100 my-2" />

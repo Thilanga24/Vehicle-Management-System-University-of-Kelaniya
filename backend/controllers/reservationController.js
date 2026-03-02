@@ -17,8 +17,14 @@ export const createReservation = async (req, res) => {
         purpose,
         vehicleId,
         reservationType, // 'emergency' or 'normal'
+        start_place,
+        destinations, // array of strings
+        remarks,
         natureOfEmergency
     } = req.body;
+
+    // Handle file attachment
+    const attachmentPath = req.file ? `/uploads/${req.file.filename}` : null;
 
     // Helper to format DateTime for MySQL
     const formatDateTime = (d, t) => {
@@ -35,20 +41,29 @@ export const createReservation = async (req, res) => {
         finalDescription = `[EMERGENCY - ${natureOfEmergency}] ${purpose}`;
     }
 
+    // Join destinations if an array is provided
+    let finalDestination = destination || 'Unspecified';
+    if (destinations && Array.isArray(destinations) && destinations.length > 0) {
+        finalDestination = destinations.join(' -> ');
+    }
+
     try {
         await db.query(
-            `INSERT INTO reservations (requester_id, vehicle_id, destination, distance_km, passengers_count, emergency_contact, start_datetime, end_datetime, description, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+            `INSERT INTO reservations (requester_id, vehicle_id, start_place, destination, distance_km, passengers_count, emergency_contact, start_datetime, end_datetime, description, attachment_url, remarks, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
             [
                 requesterId,
                 vehicleId || null,
-                destination || 'Unspecified',
+                start_place || null,
+                finalDestination,
                 parseFloat(distance) || 0,
                 parseInt(passengers) || 1,
                 emergency_contact || null,
                 startDatetime,
                 endDatetime,
-                finalDescription
+                finalDescription,
+                attachmentPath,
+                remarks || null
             ]
         );
         res.status(201).json({ message: 'Reservation created' });
@@ -86,6 +101,10 @@ export const updateReservationStatus = async (req, res) => {
     const { id } = req.params;
     const { status, level } = req.body;
     // level: 'hod', 'dean', 'sar', 'registrar', or null (admin/completion)
+
+    if (level === 'management_assistant') {
+        return res.status(403).json({ message: "Management Assistants are not authorized to approve reservations." });
+    }
 
     if (!id) return res.status(400).json({ message: "Reservation ID required" });
 

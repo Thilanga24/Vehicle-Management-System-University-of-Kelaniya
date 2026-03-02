@@ -46,7 +46,12 @@ const Dashboard = () => {
     const [emergencyForm, setEmergencyForm] = useState({
         nature: 'Medical Emergency',
         isImmediate: true,
-        description: ''
+        startPlace: '',
+        destinations: [''],
+        description: '',
+        passengers: '',
+        purpose: '',
+        attachment: null
     });
 
     const handleEmergencySubmit = async (e) => {
@@ -62,28 +67,42 @@ const Dashboard = () => {
             return;
         }
 
-        const payload = {
-            requesterId,
-            reservationType: 'emergency',
-            natureOfEmergency: emergencyForm.nature,
-            purpose: emergencyForm.description,
-            date: new Date().toISOString().split('T')[0], // Today
-            time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), // Now
-            destination: 'EMERGENCY - Review Description',
-            passengers: 1 // Default
-        };
+        const payload = new FormData();
+        payload.append('requesterId', requesterId);
+        payload.append('reservationType', 'emergency');
+        payload.append('natureOfEmergency', emergencyForm.nature);
+
+        // Combine description and purpose if both exist
+        let combinedDescription = emergencyForm.description;
+        if (emergencyForm.purpose) {
+            combinedDescription += `\nAdditional Purpose/Remarks: ${emergencyForm.purpose}`;
+        }
+        payload.append('purpose', combinedDescription);
+
+        payload.append('start_place', emergencyForm.startPlace);
+
+        emergencyForm.destinations.filter(d => String(d).trim() !== '').forEach(d => {
+            payload.append('destinations[]', d);
+        });
+
+        payload.append('date', new Date().toISOString().split('T')[0]); // Today
+        payload.append('time', new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })); // Now
+        payload.append('passengers', emergencyForm.passengers || 1); // Default is 1 if unspecified
+
+        if (emergencyForm.attachment) {
+            payload.append('attachment', emergencyForm.attachment);
+        }
 
         try {
             const response = await fetch('http://localhost:5000/api/reservations', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: payload
             });
 
             if (response.ok) {
                 setShowEmergencySuccess(true);
                 showNotification('CRITICAL: Emergency request submitted successfully. Administration has been notified.', 'success');
-                setEmergencyForm({ nature: 'Medical Emergency', isImmediate: true, description: '' });
+                setEmergencyForm({ nature: 'Medical Emergency', isImmediate: true, startPlace: '', destinations: [''], description: '', passengers: '', purpose: '', attachment: null });
                 fetchReservations(); // REFRESH THE LIST
                 // Don't auto-switch tab immediately, let them see the success message
                 setTimeout(() => {
@@ -351,7 +370,6 @@ const Dashboard = () => {
                                         </div>
                                         <div className="vehicle-info">
                                             <h3>Toyota Hiace</h3>
-                                            <p className="vehicle-details"><i className="fas fa-id-card"></i> <strong>Reg:</strong> CAB-1234</p>
                                             <p className="vehicle-details"><i className="fas fa-users"></i> <strong>Seats:</strong> 15 passengers</p>
                                             <p className="vehicle-details"><i className="fas fa-user-tie"></i> <strong>Driver:</strong> Mr. Perera</p>
                                         </div>
@@ -371,7 +389,6 @@ const Dashboard = () => {
                                         </div>
                                         <div className="vehicle-info">
                                             <h3>Honda Civic</h3>
-                                            <p className="vehicle-details"><i className="fas fa-id-card"></i> <strong>Reg:</strong> CAA-5678</p>
                                             <p className="vehicle-details"><i className="fas fa-users"></i> <strong>Seats:</strong> 4 passengers</p>
                                             <p className="vehicle-details"><i className="fas fa-clock"></i> <strong>Return:</strong> 3:00 PM</p>
                                         </div>
@@ -433,14 +450,79 @@ const Dashboard = () => {
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Description / Location</label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Start Place / Pickup Location</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500 mb-4"
+                                                placeholder="Where is the vehicle needed?"
+                                                value={emergencyForm.startPlace}
+                                                onChange={(e) => setEmergencyForm({ ...emergencyForm, startPlace: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Drop Locations (Destinations)</label>
+                                            {emergencyForm.destinations.map((dest, index) => (
+                                                <div key={index} className="flex items-center mb-2 gap-2">
+                                                    <div className="flex-1">
+                                                        <input type="text" value={dest} onChange={(e) => setEmergencyForm({ ...emergencyForm, destinations: emergencyForm.destinations.map((d, i) => i === index ? e.target.value : d) })} className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500" placeholder={`Drop Location ${index + 1}`} />
+                                                    </div>
+                                                    {index > 0 && (
+                                                        <button type="button" onClick={() => setEmergencyForm({ ...emergencyForm, destinations: emergencyForm.destinations.filter((_, i) => i !== index) })} className="p-2 text-red-500 hover:text-red-700 bg-red-50 rounded-lg">
+                                                            <i className="fas fa-times"></i>
+                                                        </button>
+                                                    )}
+                                                    {index === emergencyForm.destinations.length - 1 && (
+                                                        <button type="button" onClick={() => setEmergencyForm({ ...emergencyForm, destinations: [...emergencyForm.destinations, ''] })} className="p-2 text-red-600 hover:text-red-800 bg-red-50 rounded-lg whitespace-nowrap">
+                                                            <i className="fas fa-plus mr-1"></i> Add
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
                                             <textarea
                                                 rows="3"
                                                 className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                                                placeholder="Please describe the situation and pickup location..."
+                                                placeholder="Please describe the emergency situation..."
                                                 value={emergencyForm.description}
                                                 onChange={(e) => setEmergencyForm({ ...emergencyForm, description: e.target.value })}
                                             ></textarea>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-semibold text-gray-700 mb-1">Passengers (Optional)</label>
+                                                <input
+                                                    type="number"
+                                                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                                    placeholder="Number of passengers"
+                                                    value={emergencyForm.passengers}
+                                                    onChange={(e) => setEmergencyForm({ ...emergencyForm, passengers: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-semibold text-gray-700 mb-1">Purpose / Context (Optional)</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                                    placeholder="Any extra purpose context"
+                                                    value={emergencyForm.purpose}
+                                                    onChange={(e) => setEmergencyForm({ ...emergencyForm, purpose: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Attachment (Optional)</label>
+                                            <div className="flex items-center space-x-4">
+                                                <label className="flex items-center justify-center px-4 py-2 bg-red-50 border border-red-200 text-red-700 rounded-lg cursor-pointer hover:bg-red-100 transition">
+                                                    <i className="fas fa-paperclip mr-2 text-red-500"></i>
+                                                    <span className="text-sm font-medium">Choose File</span>
+                                                    <input type="file" className="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={(e) => setEmergencyForm({ ...emergencyForm, attachment: e.target.files[0] })} />
+                                                </label>
+                                                <span className="text-sm text-gray-500">
+                                                    {emergencyForm.attachment ? emergencyForm.attachment.name : 'No file chosen...'}
+                                                </span>
+                                            </div>
                                         </div>
                                         <button type="submit" disabled={loading} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded shadow-lg transition disabled:opacity-50">
                                             <i className={`fas fa-paper-plane mr-2 ${loading ? 'animate-pulse' : ''}`}></i> {loading ? 'Sending...' : 'Submit Emergency Request'}
@@ -629,13 +711,12 @@ const Dashboard = () => {
                                         </div>
                                         <div className="vehicle-info">
                                             <h3>Toyota Hiace (15 Seats)</h3>
-                                            <p className="vehicle-details"><i className="fas fa-id-card"></i> <strong>Reg:</strong> CAB-1234</p>
                                             <p className="vehicle-details"><i className="fas fa-check-circle text-green-600"></i> Free all day</p>
                                         </div>
                                         <div className="vehicle-actions">
                                             <button className="btn btn-secondary btn-small" onClick={() => navigate('/reservation', {
                                                 state: {
-                                                    selectedVehicle: { id: 101, model: 'Toyota Hiace', number: 'CAB-1234', seats: 15, driver: 'Mr. Perera', type: 'Van', status: 'available' },
+                                                    selectedVehicle: { id: 101, model: 'Toyota Hiace', number: '', seats: 15, driver: 'Mr. Perera', type: 'Van', status: 'available' },
                                                     date: availabilityDate
                                                 }
                                             })}>
@@ -650,7 +731,6 @@ const Dashboard = () => {
                                         </div>
                                         <div className="vehicle-info">
                                             <h3>Honda Civic (4 Seats)</h3>
-                                            <p className="vehicle-details"><i className="fas fa-id-card"></i> <strong>Reg:</strong> CAA-5678</p>
                                             <p className="vehicle-details"><i className="fas fa-clock text-red-500"></i> Booked until 5:00 PM</p>
                                         </div>
                                         <div className="vehicle-actions">
@@ -666,13 +746,12 @@ const Dashboard = () => {
                                         </div>
                                         <div className="vehicle-info">
                                             <h3>Toyota Coaster (29 Seats)</h3>
-                                            <p className="vehicle-details"><i className="fas fa-id-card"></i> <strong>Reg:</strong> NB-9999</p>
                                             <p className="vehicle-details"><i className="fas fa-check-circle text-green-600"></i> Free after 10:00 AM</p>
                                         </div>
                                         <div className="vehicle-actions">
                                             <button className="btn btn-secondary btn-small" onClick={() => navigate('/reservation', {
                                                 state: {
-                                                    selectedVehicle: { id: 102, model: 'Toyota Coaster', number: 'NB-9999', seats: 29, driver: 'TBA', type: 'Bus', status: 'available' },
+                                                    selectedVehicle: { id: 102, model: 'Toyota Coaster', number: '', seats: 29, driver: 'TBA', type: 'Bus', status: 'available' },
                                                     date: availabilityDate
                                                 }
                                             })}>

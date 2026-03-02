@@ -290,6 +290,7 @@ const ReportsAnalytics = () => {
                         const role = sessionStorage.getItem('userRole');
                         if (role === 'sar') navigate('/sar-dashboard');
                         else if (role === 'registrar') navigate('/registrar-dashboard');
+                        else if (role === 'management_assistant') navigate('/management-dashboard');
                         else if (role === 'admin') navigate('/admin-dashboard');
                         else navigate('/dashboard');
                     }}>

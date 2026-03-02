@@ -271,6 +271,7 @@ const Signup = () => {
                                         <option value="dean">Dean</option>
                                         <option value="sar">Senior Assistant Registrar</option>
                                         <option value="registrar">Registrar</option>
+                                        <option value="management_assistant">Management Assistant</option>
                                     </select>
                                 </div>
 
@@ -292,7 +293,7 @@ const Signup = () => {
                                         </select>
                                     </div>
                                 ) : (
-                                    (!['sar', 'registrar', ''].includes(formData.role)) && (
+                                    (!['sar', 'registrar', 'management_assistant', ''].includes(formData.role)) && (
                                         <div>
                                             <label className="block text-sm font-medium text-gray-300 mb-1.5 ml-1">Department</label>
                                             <select

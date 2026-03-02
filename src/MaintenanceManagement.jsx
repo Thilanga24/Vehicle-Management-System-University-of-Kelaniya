@@ -60,6 +60,7 @@ const MaintenanceManagement = () => {
         const role = sessionStorage.getItem('userRole');
         if (role === 'sar') return navigate('/sar-dashboard');
         if (role === 'registrar') return navigate('/registrar-dashboard');
+        if (role === 'management_assistant') return navigate('/management-dashboard');
         return navigate('/admin-dashboard');
     };
 
@@ -915,8 +916,8 @@ const MaintenanceManagement = () => {
                                                 <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                                                     <div
                                                         className={`h-full rounded-full transition-all duration-1000 ${v.healthScore > 80 ? 'bg-emerald-500' :
-                                                                v.healthScore > 50 ? 'bg-amber-500' :
-                                                                    'bg-red-500'
+                                                            v.healthScore > 50 ? 'bg-amber-500' :
+                                                                'bg-red-500'
                                                             }`}
                                                         style={{ width: `${v.healthScore}%` }}
                                                     ></div>

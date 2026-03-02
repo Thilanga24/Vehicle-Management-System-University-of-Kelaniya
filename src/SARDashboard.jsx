@@ -52,6 +52,9 @@ const SARDashboard = () => {
             vehicleType: r.model || 'N/A',
             submittedAt: new Date(r.created_at).toLocaleDateString(),
             message: r.description,
+            remarks: r.remarks,
+            attachment_url: r.attachment_url,
+            emergency_contact: r.emergency_contact,
             priority: r.distance_km > 100 ? 'high' : 'normal'
         }));
 
@@ -578,6 +581,26 @@ const SARDashboard = () => {
                                     <p className="text-gray-400 text-xs">Purpose</p>
                                     <p className="italic text-slate-600">"{selectedRequest.message}"</p>
                                 </div>
+                                {selectedRequest.remarks && (
+                                    <div className="col-span-2">
+                                        <p className="text-gray-400 text-xs">Remarks</p>
+                                        <p className="text-slate-700 bg-gray-50 p-2 rounded border-l-2 border-gray-300">{selectedRequest.remarks}</p>
+                                    </div>
+                                )}
+                                {selectedRequest.emergency_contact && (
+                                    <div className="col-span-2">
+                                        <p className="text-gray-400 text-xs">Emergency Contact</p>
+                                        <p className="text-slate-700 bg-gray-50 p-2 rounded border-l-2 border-gray-300">{selectedRequest.emergency_contact}</p>
+                                    </div>
+                                )}
+                                {selectedRequest.attachment_url && (
+                                    <div className="col-span-2 mt-2">
+                                        <p className="text-gray-400 text-xs">Attachment</p>
+                                        <a href={`http://localhost:5000${selectedRequest.attachment_url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-2">
+                                            <i className="fas fa-paperclip"></i> View Attached Document
+                                        </a>
+                                    </div>
+                                )}
                             </div>
 
                             <div>

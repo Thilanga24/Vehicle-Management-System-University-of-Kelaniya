@@ -149,6 +149,7 @@ const DriverManagement = () => {
         const role = sessionStorage.getItem('userRole');
         if (role === 'sar') return navigate('/sar-dashboard');
         if (role === 'registrar') return navigate('/registrar-dashboard');
+        if (role === 'management_assistant') return navigate('/management-dashboard');
         return navigate('/admin-dashboard');
     };
 

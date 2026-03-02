@@ -304,6 +304,10 @@ const VehicleManagement = () => {
             navigate('/registrar-dashboard');
             return;
         }
+        if (role === 'management_assistant') {
+            navigate('/management-dashboard');
+            return;
+        }
         navigate('/admin-dashboard');
     };
 

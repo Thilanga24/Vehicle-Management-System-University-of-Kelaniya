@@ -15,6 +15,7 @@ import RegistrarDashboard from './RegistrarDashboard.jsx'
 import HODDashboard from './HODDashboard.jsx'
 import DeanDashboard from './DeanDashboard.jsx'
 import AdminDashboard from './AdminDashboard.jsx'
+import ManagementAssistantDashboard from './ManagementAssistantDashboard.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -36,6 +37,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <Route path="/hod-dashboard" element={<HODDashboard />} />
                 <Route path="/dean-dashboard" element={<DeanDashboard />} />
                 <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                <Route path="/management-dashboard" element={<ManagementAssistantDashboard />} />
             </Routes>
         </BrowserRouter>
     </React.StrictMode>,

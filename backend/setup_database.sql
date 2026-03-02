@@ -25,7 +25,8 @@ CREATE TABLE users (
         'dean',
         'hod',
         'staff',
-        'driver'
+        'driver',
+        'management_assistant'
     ) NOT NULL,
     department VARCHAR(100),
     faculty VARCHAR(100),
@@ -74,12 +75,15 @@ CREATE TABLE reservations (
     reservation_id INT AUTO_INCREMENT PRIMARY KEY,
     requester_id INT NOT NULL,
     vehicle_id INT,
-    destination VARCHAR(255),
+    start_place VARCHAR(255),
+    destination TEXT,
     distance_km FLOAT,
     passengers_count INT,
     start_datetime DATETIME,
     end_datetime DATETIME,
     description TEXT,
+    attachment_url VARCHAR(255),
+    remarks TEXT,
     status VARCHAR(20) DEFAULT 'pending',
     -- 'pending', 'approved', 'rejected', 'completed'
     hod_approval_status VARCHAR(20) DEFAULT 'pending',

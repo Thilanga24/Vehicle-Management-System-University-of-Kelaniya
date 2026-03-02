@@ -10,7 +10,8 @@ const VehicleReservation = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [selectedVehicle, setSelectedVehicle] = useState(null);
     const [formData, setFormData] = useState({
-        destination: '',
+        start_place: '',
+        destinations: [''],
         distance: '',
         date: '',
         time: '',
@@ -18,7 +19,9 @@ const VehicleReservation = () => {
         returnTime: '',
         passengers: '',
         emergency_contact: '',
-        purpose: ''
+        purpose: '',
+        remarks: '',
+        attachment: null
     });
 
     const [distanceWarning, setDistanceWarning] = useState(false);
@@ -69,7 +72,13 @@ const VehicleReservation = () => {
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
     const handleInputChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, files } = e.target;
+
+        if (type === 'file') {
+            setFormData(prev => ({ ...prev, [name]: files[0] }));
+            return;
+        }
+
         setFormData(prev => ({ ...prev, [name]: value }));
 
         if (name === 'distance') {
@@ -80,11 +89,29 @@ const VehicleReservation = () => {
         }
     };
 
+    const handleDestinationChange = (index, value) => {
+        const newDestinations = [...formData.destinations];
+        newDestinations[index] = value;
+        setFormData(prev => ({ ...prev, destinations: newDestinations }));
+    };
+
+    const addDestination = () => {
+        setFormData(prev => ({ ...prev, destinations: [...prev.destinations, ''] }));
+    };
+
+    const removeDestination = (index) => {
+        if (formData.destinations.length > 1) {
+            const newDestinations = formData.destinations.filter((_, i) => i !== index);
+            setFormData(prev => ({ ...prev, destinations: newDestinations }));
+        }
+    };
+
     const validateStep1 = () => !!selectedVehicle;
 
     const validateStep2 = () => {
-        const required = ['destination', 'distance', 'date', 'time', 'returnDate', 'returnTime', 'passengers', 'emergency_contact', 'purpose'];
-        return required.every(field => formData[field] && formData[field].trim() !== '');
+        const required = ['start_place', 'distance', 'date', 'time', 'returnDate', 'returnTime', 'passengers', 'emergency_contact', 'purpose'];
+        const isDestinationsValid = formData.destinations && formData.destinations.some(d => String(d).trim() !== '');
+        return isDestinationsValid && required.every(field => formData[field] && String(formData[field]).trim() !== '');
     };
 
     const nextStep = () => {
@@ -121,27 +148,36 @@ const VehicleReservation = () => {
             return;
         }
 
-        const payload = {
-            requesterId,
-            vehicleId: selectedVehicle.id,
-            destination: formData.destination,
-            distance: formData.distance,
-            passengers: formData.passengers,
-            emergency_contact: formData.emergency_contact,
-            date: formData.date,
-            time: formData.time,
-            returnDate: formData.returnDate,
-            returnTime: formData.returnTime,
-            purpose: formData.purpose
-        };
+        const payload = new FormData();
+        payload.append('requesterId', requesterId);
+        payload.append('vehicleId', selectedVehicle.id);
+        payload.append('start_place', formData.start_place);
+
+        // Append all destinations
+        formData.destinations.filter(d => String(d).trim() !== '').forEach(d => {
+            payload.append('destinations[]', d);
+        });
+
+        payload.append('distance', formData.distance);
+        payload.append('passengers', formData.passengers);
+        payload.append('emergency_contact', formData.emergency_contact);
+        payload.append('date', formData.date);
+        payload.append('time', formData.time);
+        payload.append('returnDate', formData.returnDate);
+        payload.append('returnTime', formData.returnTime);
+        payload.append('purpose', formData.purpose);
+        payload.append('remarks', formData.remarks);
+
+        if (formData.attachment) {
+            payload.append('attachment', formData.attachment);
+        }
 
         try {
             const response = await fetch('http://localhost:5000/api/reservations', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
+                // Don't set Content-Type header manually when using FormData
+                // The browser will automatically set it to 'multipart/form-data' with the correct boundary
+                body: payload
             });
 
             const data = await response.json();
@@ -253,7 +289,6 @@ const VehicleReservation = () => {
                                             {vehicle.status === 'maintenance' && <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">Maintenance</span>}
                                         </div>
                                         <div className="space-y-2 text-sm text-slate-600">
-                                            <div className="flex justify-between"><span>Number:</span> <span className="font-medium text-slate-800">{vehicle.number}</span></div>
                                             <div className="flex justify-between"><span>Seats:</span> <span className="font-medium text-slate-800">{vehicle.seats}</span></div>
                                             <div className="flex justify-between"><span>Driver:</span> <span className="font-medium text-slate-800">{vehicle.driver}</span></div>
                                         </div>
@@ -283,8 +318,28 @@ const VehicleReservation = () => {
                             <div className="bg-white rounded-xl shadow-md p-6 border border-slate-100">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Destination</label>
-                                        <input type="text" name="destination" value={formData.destination} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Peradeniya" />
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Start Place</label>
+                                        <input type="text" name="start_place" value={formData.start_place} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. University Admin Block" />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Destinations</label>
+                                        {formData.destinations.map((dest, index) => (
+                                            <div key={index} className="flex items-center mb-2 gap-2">
+                                                <div className="flex-1">
+                                                    <input type="text" value={dest} onChange={(e) => handleDestinationChange(index, e.target.value)} className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder={`Destination ${index + 1}`} />
+                                                </div>
+                                                {index > 0 && (
+                                                    <button type="button" onClick={() => removeDestination(index)} className="p-2 text-red-500 hover:text-red-700 bg-red-50 rounded-lg">
+                                                        <i className="fas fa-times"></i>
+                                                    </button>
+                                                )}
+                                                {index === formData.destinations.length - 1 && (
+                                                    <button type="button" onClick={addDestination} className="p-2 text-blue-600 hover:text-blue-800 bg-blue-50 rounded-lg whitespace-nowrap">
+                                                        <i className="fas fa-plus mr-1"></i> Add
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 mb-1">Distance (km)</label>
@@ -319,8 +374,26 @@ const VehicleReservation = () => {
                                 </div>
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Purpose</label>
-                                        <textarea name="purpose" value={formData.purpose} onChange={handleInputChange} rows="2" className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Purpose / Reason (Optional)</label>
+                                        <textarea name="purpose" value={formData.purpose} onChange={handleInputChange} rows="2" className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Please provide any additional context..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Attachment (Document/Image)</label>
+                                        <div className="flex items-center space-x-4">
+                                            <label className="flex items-center justify-center px-4 py-2 bg-slate-100 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-200 transition">
+                                                <i className="fas fa-paperclip mr-2 text-slate-500"></i>
+                                                <span className="text-sm font-medium text-slate-700">Choose File</span>
+                                                <input type="file" name="attachment" className="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={handleInputChange} />
+                                            </label>
+                                            <span className="text-sm text-slate-500">
+                                                {formData.attachment ? formData.attachment.name : 'No file chosen...'}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-400 mt-1">Upload PDF, DOC, or Image describing the official purpose (if applicable).</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Remarks (Optional)</label>
+                                        <textarea name="remarks" value={formData.remarks} onChange={handleInputChange} rows="2" className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Any additional remarks..."></textarea>
                                     </div>
                                 </div>
                                 <div className="mt-8 flex justify-between">
@@ -343,17 +416,22 @@ const VehicleReservation = () => {
                                     <h3 className="font-bold text-lg text-slate-800 mb-4 border-b pb-2">Vehicle</h3>
                                     <div className="space-y-2 text-sm">
                                         <div className="flex justify-between"><span className="text-slate-500">Model:</span> <span className="font-medium">{selectedVehicle?.model}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Number:</span> <span className="font-medium">{selectedVehicle?.number}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Driver:</span> <span className="font-medium">{selectedVehicle?.driver}</span></div>
                                     </div>
                                 </div>
                                 <div className="bg-white rounded-xl shadow-md p-6 border border-slate-100">
                                     <h3 className="font-bold text-lg text-slate-800 mb-4 border-b pb-2">Trip</h3>
                                     <div className="space-y-2 text-sm">
-                                        <div className="flex justify-between"><span className="text-slate-500">Destination:</span> <span className="font-medium">{formData.destination}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Start Place:</span> <span className="font-medium">{formData.start_place}</span></div>
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-slate-500 whitespace-nowrap mr-4">Destinations:</span>
+                                            <span className="font-medium text-right">{formData.destinations.filter(d => String(d).trim() !== '').join(' -> ')}</span>
+                                        </div>
                                         <div className="flex justify-between"><span className="text-slate-500">Departs:</span> <span className="font-medium">{formData.date} {formData.time}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Return:</span> <span className="font-medium">{formData.returnDate} {formData.returnTime}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Distance:</span> <span className="font-medium">{formData.distance} km</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Attachment:</span> <span className="font-medium">{formData.attachment ? 'Included' : 'None'}</span></div>
+                                        {formData.remarks && <div className="flex justify-between items-start"><span className="text-slate-500 mr-4">Remarks:</span> <span className="font-medium text-right">{formData.remarks}</span></div>}
                                     </div>
                                 </div>
                             </div>
