@@ -13,6 +13,7 @@ import {
     faTimes
 } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Signup = () => {
     const navigate = useNavigate();
@@ -183,14 +184,30 @@ const Signup = () => {
 
                 <div className="w-full max-w-xl relative z-10">
                     <div className="login-card rounded-2xl card-shadow p-6 sm:p-10 border border-[#F6DD26]/20">
-                        {notification.show && (
-                            <div className={`mb-6 p-4 rounded-lg flex items-center justify-between ${notification.type === 'success' ? 'bg-green-900/50 text-green-200 border border-green-800' : 'bg-red-900/50 text-red-200 border border-red-800'}`}>
-                                <span className="text-sm font-medium">{notification.message}</span>
-                                <button onClick={() => setNotification({ ...notification, show: false })} className="hover:text-white transition-colors">
-                                    <FontAwesomeIcon icon={faTimes} />
-                                </button>
-                            </div>
-                        )}
+                        <AnimatePresence>
+                            {notification.show && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className={`mb-6 p-4 rounded-lg flex items-center justify-between ${notification.type === 'success' ? 'bg-green-900/40 text-green-200 border border-green-800/50' : 'bg-red-900/40 text-red-100 border border-red-800/50'} backdrop-blur-sm`}
+                                >
+                                    <div className="flex items-center">
+                                        <FontAwesomeIcon
+                                            icon={notification.type === 'success' ? faBuilding : faLock}
+                                            className={`mr-3 ${notification.type === 'success' ? 'text-green-400' : 'text-red-400'}`}
+                                        />
+                                        <span className="text-sm font-medium">{notification.message}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setNotification({ ...notification, show: false })}
+                                        className="ml-4 text-white/60 hover:text-white transition-colors"
+                                    >
+                                        <FontAwesomeIcon icon={faTimes} />
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                         <div className="text-center mb-8">
                             <h2 className="text-3xl font-bold !text-white mb-2" style={{ color: 'white' }}>Create Account</h2>
                             <p className="text-gray-300">Join the University Transportation System</p>
@@ -269,9 +286,9 @@ const Signup = () => {
                                         <option value="staff">Staff</option>
                                         <option value="hod">Head of Department</option>
                                         <option value="dean">Dean</option>
+                                        <option value="management_assistant">Management Assistant</option>
                                         <option value="sar">Senior Assistant Registrar</option>
                                         <option value="registrar">Registrar</option>
-                                        <option value="management_assistant">Management Assistant</option>
                                     </select>
                                 </div>
 

@@ -357,17 +357,17 @@ const RegistrarDashboard = () => {
     return (
         <div className="registrar-dashboard-container">
             {/* Sidebar */}
-            <div className={`sidebar bg-gradient-to-b from-[#1a0505] to-[#2d0a0a] border-none w-80 fixed h-full z-40 transition-transform duration-300 overflow-y-auto`}>
-                <div className="p-6 border-b border-white/10">
+            <div className={`sidebar bg-gradient-to-b from-[#1a0505] to-[#2d0a0a] border-none w-80 fixed h-full z-40 transition-transform duration-300 flex flex-col`}>
+                <div className="p-6 border-b border-white/10 shrink-0">
                     <h1 className="text-2xl font-bold text-white mb-2">Registrar Portal</h1>
                     <p className="text-sm text-gray-400">Executive Administration</p>
                 </div>
 
-                <nav className="p-4 space-y-2 pb-24">
+                <nav className="p-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar">
                     {[
                         { id: 'overview', label: 'Dashboard', sub: 'Overview & Metrics', icon: 'fa-tachometer-alt' },
                         { id: 'longdistance', label: 'Approvals', sub: 'Trip Requests', icon: 'fa-file-signature' },
-                        { id: 'approved-reservations', label: 'Approved Reservations', sub: 'Status Overview', icon: 'fa-check-double' },
+                        { id: 'approved-reservations', label: 'Approved Today', sub: 'Confirmed trips', icon: 'fa-check-double' },
                     ].map(item => (
                         <div key={item.id}
                             className={`nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition ${activeTab === item.id ? 'active bg-white/10 text-yellow-400 border-l-4 border-yellow-400' : ''}`}
@@ -382,6 +382,22 @@ const RegistrarDashboard = () => {
                             )}
                         </div>
                     ))}
+
+                    <div className="pt-6 border-t border-white/5 mt-4 space-y-1">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-4">My Personal Portal</p>
+                        {[
+                            { id: 'new-booking', label: 'New Booking', icon: 'fa-calendar-plus', action: () => navigate('/reservation') },
+                            { id: 'my-reservations', label: 'My Reservations', icon: 'fa-calendar-check' },
+                            { id: 'past-bookings', label: 'Past Bookings', icon: 'fa-history' }
+                        ].map(item => (
+                            <div key={item.id}
+                                className={`nav-item p-3 px-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition ${activeTab === item.id ? 'active bg-white/10 text-yellow-400 border-l-4 border-yellow-400 font-bold' : ''}`}
+                                onClick={() => item.action ? item.action() : setActiveTab(item.id)}>
+                                <i className={`fas ${item.icon} text-sm w-6 text-center`}></i>
+                                <div className="flex-1 text-sm font-medium">{item.label}</div>
+                            </div>
+                        ))}
+                    </div>
 
                     <div
                         className="nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition"
@@ -424,7 +440,7 @@ const RegistrarDashboard = () => {
                     </div>
                 </nav>
 
-                <div className="fixed bottom-0 left-0 w-80 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                <div className="p-4 bg-gradient-to-t from-black/20 to-transparent shrink-0">
                     <button onClick={logout} className="w-full p-3 bg-white/10 hover:bg-white/20 rounded-lg transition duration-200 text-white flex items-center justify-center border border-white/10">
                         <i className="fas fa-sign-out-alt mr-2"></i>Logout
                     </button>
@@ -493,45 +509,114 @@ const RegistrarDashboard = () => {
                     {activeTab === 'approved-reservations' && (
                         <div className="animation-fade-in card-gradient p-6 rounded-xl">
                             <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                                <i className="fas fa-check-double text-green-600"></i> Approved Reservations
+                                <i className="fas fa-check-double text-green-600"></i> Approved Daily Fleet Missions
                             </h2>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm">
-                                    <thead className="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                    <thead className="bg-[#800000] text-white uppercase font-semibold">
                                         <tr>
-                                            <th className="px-4 py-3">Request ID</th>
-                                            <th className="px-4 py-3">Department</th>
-                                            <th className="px-4 py-3">Destination</th>
-                                            <th className="px-4 py-3">Date</th>
-                                            <th className="px-4 py-3 text-right">Status</th>
+                                            <th className="px-6 py-4 font-bold border-r border-white/10">Destination</th>
+                                            <th className="px-6 py-4 font-bold border-r border-white/10">Travel Date</th>
+                                            <th className="px-6 py-4 font-bold text-right">Status</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100">
+                                    <tbody className="divide-y divide-slate-100 italic text-slate-600">
                                         {reservations.filter(r => r.status === 'approved').map(req => (
-                                            <tr key={req.reservation_id} className="hover:bg-slate-50 transition">
-                                                <td className="px-4 py-3 font-medium text-slate-700">{req.reservation_id}</td>
-                                                <td className="px-4 py-3 text-slate-600">{req.department || 'N/A'}</td>
-                                                <td className="px-4 py-3 text-slate-600">{req.destination}</td>
-                                                <td className="px-4 py-3 text-slate-600">{new Date(req.start_datetime).toLocaleDateString()}</td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                                        <i className="fas fa-check-circle"></i> Approved
-                                                    </span>
+                                            <tr key={req.reservation_id} className="hover:bg-slate-50 transition border-b border-gray-100">
+                                                <td className="px-6 py-4 font-semibold text-slate-700">{req.destination}</td>
+                                                <td className="px-6 py-4 text-slate-600">{new Date(req.start_datetime).toLocaleDateString()}</td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded-md text-[10px] font-black uppercase">Approved</span>
                                                 </td>
                                             </tr>
                                         ))}
                                         {reservations.filter(r => r.status === 'approved').length === 0 && (
-                                            <tr><td colSpan="5" className="px-4 py-8 text-center text-slate-400">No approved reservations found.</td></tr>
+                                            <tr><td colSpan="3" className="px-6 py-10 text-center text-slate-400">No approved reservations found.</td></tr>
                                         )}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     )}
+
+                    {activeTab === 'my-reservations' && (
+                        <div className="animation-fade-in space-y-6">
+                            <div className="card-gradient p-6 rounded-xl">
+                                <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-slate-800">
+                                    <i className="fas fa-calendar-check text-blue-600"></i> My Personal Trips
+                                </h2>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm border-collapse">
+                                        <thead className="bg-slate-50 text-slate-500 uppercase font-semibold">
+                                            <tr>
+                                                <th className="px-6 py-4 font-bold">Target Location</th>
+                                                <th className="px-6 py-4 font-bold">Planned Timing</th>
+                                                <th className="px-6 py-4 font-bold text-right">Current Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {reservations.filter(r => String(r.requester_id) === String(user.id) && r.status !== 'completed' && r.status !== 'rejected').map(req => (
+                                                <tr key={req.reservation_id} className="hover:bg-slate-50 transition border-b border-gray-100">
+                                                    <td className="px-6 py-4 font-bold text-slate-800">{req.destination}</td>
+                                                    <td className="px-6 py-4 text-slate-600 font-medium">{new Date(req.start_datetime).toLocaleDateString()} at {new Date(req.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${req.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                            {req.status === 'approved' ? 'CONFIRMED' : 'WAITING'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {reservations.filter(r => String(r.requester_id) === String(user.id) && r.status !== 'completed' && r.status !== 'rejected').length === 0 && (
+                                                <tr><td colSpan="3" className="px-6 py-10 text-center text-slate-400">You have no active personal reservations.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'past-bookings' && (
+                        <div className="animation-fade-in space-y-6">
+                            <div className="card-gradient p-6 rounded-xl">
+                                <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-slate-400">
+                                    <i className="fas fa-history"></i> Personal Travel History
+                                </h2>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-[#1f2937] text-white uppercase font-black">
+                                            <tr>
+                                                <th className="px-6 py-4 tracking-tighter">Site Visited</th>
+                                                <th className="px-6 py-4 tracking-tighter">Date of Travel</th>
+                                                <th className="px-6 py-4 tracking-tighter text-right">Final Outcome</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {reservations.filter(r => String(r.requester_id) === String(user.id) && (r.status === 'completed' || r.status === 'rejected')).map(req => (
+                                                <tr key={req.reservation_id} className="hover:bg-slate-50 transition border-b border-gray-100">
+                                                    <td className="px-6 py-4 font-black text-slate-700">{req.destination}</td>
+                                                    <td className="px-6 py-4 text-slate-500 font-bold">{new Date(req.start_datetime).toLocaleDateString()}</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${req.status === 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-red-50 text-red-500'}`}>
+                                                            {req.status === 'completed' ? 'COMPLETED' : 'REJECTED'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {reservations.filter(r => String(r.requester_id) === String(user.id) && (r.status === 'completed' || r.status === 'rejected')).length === 0 && (
+                                                <tr><td colSpan="3" className="px-6 py-10 text-center text-slate-400">No past travel records found.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {activeTab === 'fleet' && renderFleet()}
 
                     {/* Other tabs placeholders */}
-                    {!['overview', 'longdistance', 'fleet', 'approved-reservations'].includes(activeTab) && (
+                    {!['overview', 'longdistance', 'fleet', 'approved-reservations', 'my-reservations', 'past-bookings'].includes(activeTab) && (
                         <div className="card-gradient p-10 rounded-xl text-center">
                             <i className="fas fa-wrench text-6xl text-slate-300 mb-6"></i>
                             <h2 className="text-2xl font-bold text-slate-700">Under Maintenance</h2>
@@ -544,16 +629,16 @@ const RegistrarDashboard = () => {
             {/* Modal Layer */}
             {modal.show && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm animation-fade-in p-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
                         {modal.type === 'review' && modal.data && (
                             <>
-                                <div className="bg-[#800000] p-4 flex justify-between items-center text-white">
+                                <div className="bg-[#800000] p-4 flex justify-between items-center text-white shrink-0">
                                     <h3 className="text-lg font-bold flex items-center gap-2">
                                         <i className="fas fa-file-signature"></i> Review Request {modal.data.id}
                                     </h3>
                                     <button onClick={handleModalClose} className="hover:text-yellow-400 transition"><i className="fas fa-times"></i></button>
                                 </div>
-                                <div className="p-6 space-y-4">
+                                <div className="p-6 space-y-4 overflow-y-auto">
                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                         <div><p className="text-xs font-bold text-slate-400 uppercase">Department</p><p className="font-semibold text-slate-800">{modal.data.department}</p></div>
                                         <div><p className="text-xs font-bold text-slate-400 uppercase">Priority</p><p className="font-semibold text-slate-800">{modal.data.priority}</p></div>

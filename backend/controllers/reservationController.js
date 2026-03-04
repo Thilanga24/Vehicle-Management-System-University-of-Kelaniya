@@ -79,10 +79,12 @@ export const createReservation = async (req, res) => {
 export const getReservations = async (req, res) => {
     try {
         const [reservations] = await db.query(`
-            SELECT r.*, u.first_name, u.last_name, u.department, u.faculty, v.registration_number, v.model
+            SELECT r.*, u.first_name, u.last_name, u.department, u.faculty, v.registration_number, v.model,
+                   d.first_name as driver_first_name, d.last_name as driver_last_name, d.phone_number as driver_phone, d.license_number
             FROM reservations r
             JOIN users u ON r.requester_id = u.user_id
             LEFT JOIN vehicles v ON r.vehicle_id = v.vehicle_id
+            LEFT JOIN drivers d ON v.assigned_driver_id = d.driver_id
             ORDER BY r.created_at DESC
         `);
         res.json(reservations);

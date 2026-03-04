@@ -438,10 +438,12 @@ const VehicleReservation = () => {
 
                             <div className="bg-white rounded-xl shadow-md p-6 border border-slate-100 mb-6">
                                 <h3 className="font-bold text-lg text-slate-800 mb-4">Approval Chain</h3>
-                                <div className="flex items-center text-sm text-slate-600">
+                                <div className="flex items-center text-sm text-slate-600 flex-wrap gap-y-2">
                                     <div className="flex items-center"><span className="w-3 h-3 bg-yellow-400 rounded-full mr-2"></span> HOD</div>
                                     <i className="fas fa-chevron-right mx-4 text-slate-300"></i>
                                     <div className="flex items-center"><span className="w-3 h-3 bg-yellow-400 rounded-full mr-2"></span> Dean</div>
+                                    <i className="fas fa-chevron-right mx-4 text-slate-300"></i>
+                                    <div className="flex items-center"><span className="w-3 h-3 bg-yellow-400 rounded-full mr-2"></span> SAR</div>
                                     {parseInt(formData.distance) > 100 && (
                                         <>
                                             <i className="fas fa-chevron-right mx-4 text-slate-300"></i>

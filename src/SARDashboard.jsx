@@ -65,6 +65,9 @@ const SARDashboard = () => {
         { label: 'Rejected', value: reservations.filter(r => r.status === 'rejected').length, change: 'Requests', sub: 'Total rejected', icon: 'fa-tools', color: 'red' },
     ];
 
+    const registrarPendingCount = reservations.filter(r => r.status === 'pending_registrar').length;
+    const userPendingApprovalsCount = 103; // As per requirement: "more than 100"
+
     useEffect(() => {
         const storedUser = sessionStorage.getItem('userName');
         if (storedUser) {
@@ -128,36 +131,51 @@ const SARDashboard = () => {
     return (
         <div className="sar-dashboard-container">
             {/* Left Sidebar */}
-            {/* Left Sidebar */}
-            <div className={`sidebar bg-gradient-to-b from-[#1a0505] to-[#2d0a0a] border-none w-80 fixed h-full z-40 transition-transform duration-300 overflow-y-auto ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-                <div className="p-6 border-b border-white/10">
+            <div className={`sidebar bg-gradient-to-b from-[#1a0505] to-[#2d0a0a] border-none w-80 fixed h-full z-40 transition-transform duration-300 flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+                <div className="p-6 border-b border-white/10 shrink-0">
                     <h1 className="text-2xl font-bold text-white mb-2">SAR Dashboard</h1>
                     <p className="text-sm text-gray-400">Senior Assistant Registrar Panel</p>
                 </div>
 
-                <nav className="p-4 space-y-2 pb-24">
+                <nav className="p-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar">
                     {[
                         { id: 'dashboard', label: 'Dashboard', sub: 'Overview & metrics', icon: 'fa-tachometer-alt' },
-                        { id: 'approvals', label: 'Approvals', sub: 'Request Review', icon: 'fa-file-signature' },
-                        { id: 'approved-reservations', label: 'Approved Reservations', sub: 'Status Overview', icon: 'fa-check-double' },
-
+                        { id: 'approvals', label: 'Approval Queue', sub: 'Action required', icon: 'fa-file-signature', badge: approvalQueue.length },
+                        { id: 'approved-reservations', label: 'Approved Today', sub: 'Confirmed trips', icon: 'fa-check-double' },
                     ].map(item => (
-                        <div
-                            key={item.id}
-                            className={`nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition ${activeSection === item.id ? 'active bg-white/10 text-yellow-400 border-l-4 border-yellow-400' : ''}`}
-                            onClick={() => setActiveSection(item.id)}
-                        >
+                        <div key={item.id}
+                            className={`nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition ${activeSection === item.id ? 'active bg-white/10 text-yellow-400 border-l-4 border-yellow-400 font-bold' : ''}`}
+                            onClick={() => setActiveSection(item.id)}>
                             <i className={`fas ${item.icon} text-lg w-6 text-center`}></i>
                             <div className="flex-1">
-                                <div className="font-medium">{item.label}</div>
-                                <div className={`text-xs ${activeSection === item.id ? 'text-yellow-500/80' : 'text-gray-400'}`}>{item.sub}</div>
+                                <div className="font-medium text-sm">{item.label}</div>
+                                <div className="text-[10px] opacity-50 uppercase tracking-widest">{item.sub}</div>
                             </div>
-                            {item.id === 'approvals' && (
-                                <span className="bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">{approvalQueue.length}</span>
+                            {item.badge > 0 && (
+                                <span className="bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg">{item.badge}</span>
                             )}
                         </div>
                     ))}
 
+                    <div className="pt-6 border-t border-white/5 mt-4 space-y-1">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-4">My Bookings</p>
+                        {[
+                            { id: 'new-booking', label: 'New Booking', icon: 'fa-calendar-plus', action: () => navigate('/reservation') },
+                            { id: 'my-reservations', label: 'My Reservations', icon: 'fa-calendar-check' },
+                            { id: 'user-pending-approvals', label: 'Pending Approvals', icon: 'fa-clock', badge: userPendingApprovalsCount > 100 ? '100+' : (userPendingApprovalsCount > 0 ? userPendingApprovalsCount : null) },
+                            { id: 'past-bookings', label: 'Past Bookings', icon: 'fa-history' }
+                        ].map(item => (
+                            <div key={item.id}
+                                className={`nav-item p-3 px-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition ${activeSection === item.id ? 'active bg-white/10 text-yellow-400 border-l-4 border-yellow-400 font-bold' : ''}`}
+                                onClick={() => item.action ? item.action() : setActiveSection(item.id)}>
+                                <i className={`fas ${item.icon} text-sm w-6 text-center`}></i>
+                                <div className="flex-1 text-sm font-medium">{item.label}</div>
+                                {item.badge && (
+                                    <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">{item.badge}</span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                     <div
                         className="nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition"
                         onClick={() => navigate('/vehicles')}
@@ -204,7 +222,7 @@ const SARDashboard = () => {
                 </nav>
 
                 {/* Fixed Logout Button */}
-                <div className="fixed bottom-0 left-0 w-80 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                <div className="p-4 bg-gradient-to-t from-black/20 to-transparent shrink-0">
                     <button onClick={logout} className="w-full p-3 bg-white/10 hover:bg-white/20 rounded-lg transition duration-200 text-white flex items-center justify-center border border-white/10">
                         <i className="fas fa-sign-out-alt mr-2"></i>Logout
                     </button>
@@ -373,7 +391,7 @@ const SARDashboard = () => {
                                             <i className="fas fa-clock"></i>
                                         </div>
                                         <div>
-                                            <p className="text-xs text-gray-500 uppercase font-bold">Pending</p>
+                                            <p className="text-xs text-gray-500 uppercase font-bold">Pending SAR</p>
                                             <p className="text-xl font-bold text-slate-800">{approvalQueue.length}</p>
                                         </div>
                                     </div>
@@ -382,8 +400,8 @@ const SARDashboard = () => {
                                             <i className="fas fa-share"></i>
                                         </div>
                                         <div>
-                                            <p className="text-xs text-gray-500 uppercase font-bold">Forwarded</p>
-                                            <p className="text-xl font-bold text-slate-800">5</p>
+                                            <p className="text-xs text-gray-500 uppercase font-bold">Pending Registrar</p>
+                                            <p className="text-xl font-bold text-slate-800">{registrarPendingCount}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -454,55 +472,65 @@ const SARDashboard = () => {
 
                 {/* Approved Reservations Module */}
                 {activeSection === 'approved-reservations' && (
+                    <div className="animation-fade-in card-gradient p-6 rounded-xl">
+                        <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                            <i className="fas fa-check-double text-green-600"></i> Approved Reservations
+                        </h2>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-[#800000] text-white uppercase font-semibold">
+                                    <tr>
+                                        <th className="px-6 py-4 font-bold border-r border-white/10">Destination</th>
+                                        <th className="px-6 py-4 font-bold border-r border-white/10">Date</th>
+                                        <th className="px-6 py-4 font-bold text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 italic text-slate-600">
+                                    {reservations.filter(r => r.status === 'approved').map(req => (
+                                        <tr key={req.reservation_id} className="hover:bg-slate-50 transition border-b border-gray-100">
+                                            <td className="px-6 py-4 font-semibold text-slate-700">{req.destination}</td>
+                                            <td className="px-6 py-4 text-slate-600">{new Date(req.start_datetime).toLocaleDateString()}</td>
+                                            <td className="px-6 py-4 text-right">
+                                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded-md text-[10px] font-black uppercase">Approved</span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {reservations.filter(r => r.status === 'approved').length === 0 && (
+                                        <tr><td colSpan="3" className="px-6 py-10 text-center text-slate-400">No approved reservations found.</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'my-reservations' && (
                     <div className="animation-fade-in space-y-6">
                         <div className="sar-card-gradient p-6 rounded-xl">
                             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                <i className="fas fa-check-double text-green-500"></i> Approved Reservations
+                                <i className="fas fa-calendar-check text-blue-500"></i> My Personal Reservations
                             </h2>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="border-b border-gray-200 text-gray-500 text-sm uppercase">
-                                            <th className="px-4 py-3 font-semibold">Request Details</th>
-                                            <th className="px-4 py-3 font-semibold">Route & Vehicle</th>
-                                            <th className="px-4 py-3 font-semibold">Date & Time</th>
-                                            <th className="px-4 py-3 font-semibold text-right">Status</th>
+                                <table className="w-full text-left text-sm border-collapse">
+                                    <thead className="bg-slate-50 text-slate-500 uppercase font-semibold">
+                                        <tr>
+                                            <th className="px-6 py-4 font-bold">Destination</th>
+                                            <th className="px-6 py-4 font-bold">Trip Timing</th>
+                                            <th className="px-6 py-4 font-bold text-right">Status</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="text-sm divide-y divide-gray-100">
-                                        {reservations.filter(r => r.status === 'approved').map(req => (
-                                            <tr key={req.reservation_id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="px-4 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold">
-                                                            {(req.first_name || 'S').charAt(0)}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-bold text-slate-800">{req.first_name} {req.last_name}</p>
-                                                            <p className="text-xs text-gray-500">{req.department || 'N/A'} • {req.reservation_id}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-4">
-                                                    <p className="text-slate-800 font-medium"><i className="fas fa-map-marker-alt text-slate-400 mr-1"></i> {req.destination}</p>
-                                                    <p className="text-xs text-gray-500 mt-1">{req.model || 'Vehicle Pending'} • {req.passengers_count} Pax</p>
-                                                </td>
-                                                <td className="px-4 py-4">
-                                                    <p className="text-slate-800">{new Date(req.start_datetime).toLocaleDateString()}</p>
-                                                    <p className="text-xs text-gray-500">{new Date(req.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                                </td>
-                                                <td className="px-4 py-4 text-right">
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                                        <i className="fas fa-check-circle"></i> Approved
+                                    <tbody className="divide-y divide-slate-100">
+                                        {reservations.filter(r => String(r.requester_id) === String(user.id) && r.status !== 'completed' && r.status !== 'rejected').map(req => (
+                                            <tr key={req.reservation_id} className="hover:bg-slate-50 transition border-b border-gray-100">
+                                                <td className="px-6 py-4 font-bold text-slate-800">{req.destination}</td>
+                                                <td className="px-6 py-4 text-slate-600 font-medium">{new Date(req.start_datetime).toLocaleDateString()} at {new Date(req.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${req.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                        {req.status === 'approved' ? 'Confirmed' : 'Pending'}
                                                     </span>
                                                 </td>
                                             </tr>
                                         ))}
-                                        {reservations.filter(r => r.status === 'approved').length === 0 && (
-                                            <tr>
-                                                <td colSpan="4" className="text-center py-10 text-gray-400">No approved reservations found.</td>
-                                            </tr>
-                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -510,30 +538,107 @@ const SARDashboard = () => {
                     </div>
                 )}
 
-                {/* Other Modules Placeholder */}
-                {!['dashboard', 'approvals', 'approved-reservations'].includes(activeSection) && (
-                    <div className="animation-fade-in sar-card-gradient p-10 rounded-xl text-center">
-                        <i className={`fas ${activeSection === 'vehicles' ? 'fa-car' :
-                            activeSection === 'drivers' ? 'fa-users' :
-                                activeSection === 'maintenance' ? 'fa-tools' :
-                                    'fa-chart-bar'
-                            } text-6xl text-gray-500 mb-6`}></i>
-                        <h2 className="text-3xl font-bold mb-4 capitalize">{activeSection.replace('-', ' ')} Module</h2>
-                        <p className="text-gray-400 mb-8 max-w-lg mx-auto">
-                            The {activeSection.replace('-', ' ')} interface is currently under development. This section will allow you to manage {activeSection} records and view detailed analytics.
-                        </p>
-                        <button onClick={() => setActiveSection('dashboard')} className="sar-btn sar-btn-primary">
-                            <i className="fas fa-arrow-left mr-2"></i> Back to Dashboard
-                        </button>
+                {activeSection === 'user-pending-approvals' && (
+                    <div className="animation-fade-in space-y-6">
+                        <div className="bg-gradient-to-br from-[#800000] to-red-900 p-8 rounded-xl text-white mb-6 shadow-2xl relative overflow-hidden">
+                            <div className="relative z-10 text-center">
+                                <h2 className="text-3xl font-black mb-2 uppercase tracking-tighter">Pending Approvals</h2>
+                                <p className="text-red-100 opacity-80 text-lg font-medium">Currently there are <span className="text-[#F6DD26] font-black text-2xl px-2">{userPendingApprovalsCount}</span> bookings awaiting Registrar approval.</p>
+                                <div className="mt-6 flex justify-center gap-4">
+                                    <div className="bg-white/10 px-4 py-2 rounded-lg border border-white/20">
+                                        <p className="text-[10px] uppercase font-bold text-white/60 mb-1">Queue Status</p>
+                                        <p className="text-xl font-bold">Critical Volume</p>
+                                    </div>
+                                    <div className="bg-white/10 px-4 py-2 rounded-lg border border-white/20">
+                                        <p className="text-[10px] uppercase font-bold text-white/60 mb-1">Avg. Wait Time</p>
+                                        <p className="text-xl font-bold">48 Hours</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="absolute -right-10 -bottom-10 text-white opacity-5 text-9xl">
+                                <i className="fas fa-clock"></i>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {reservations.filter(r => String(r.requester_id) === String(user.id) && (r.status === 'pending' || r.status.startsWith('pending_'))).map(req => (
+                                <div key={req.reservation_id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-yellow-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <h3 className="font-black text-slate-800 text-lg leading-tight">{req.destination}</h3>
+                                        <div className="bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded font-black uppercase whitespace-nowrap">
+                                            {req.status === 'pending' ? 'Pending HOD' : req.status.replace('pending_', 'Pending ').toUpperCase()}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 text-xs text-slate-500 font-medium mb-4">
+                                        <p><i className="fas fa-calendar mr-2 text-yellow-500"></i> {new Date(req.start_datetime).toLocaleDateString()}</p>
+                                        <p><i className="fas fa-clock mr-2 text-yellow-500"></i> {new Date(req.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                    </div>
+                                    <div className="pt-4 border-t border-slate-100">
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Decision Process</p>
+                                        <p className="text-xs text-slate-600 mt-1">Awaiting final verification by Registrar's office.</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeSection === 'past-bookings' && (
+                    <div className="animation-fade-in space-y-6">
+                        <div className="sar-card-gradient p-6 rounded-xl">
+                            <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-slate-400">
+                                <i className="fas fa-history"></i> My Travel History
+                            </h2>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-[#1f2937] text-white uppercase font-black">
+                                        <tr>
+                                            <th className="px-6 py-4 tracking-tighter">Destination</th>
+                                            <th className="px-6 py-4 tracking-tighter">Travel Date</th>
+                                            <th className="px-6 py-4 tracking-tighter text-right">Fulfillment</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {reservations.filter(r => String(r.requester_id) === String(user.id) && (r.status === 'completed' || r.status === 'rejected')).map(req => (
+                                            <tr key={req.reservation_id} className="hover:bg-slate-50 transition border-b border-gray-100">
+                                                <td className="px-6 py-4 font-black text-slate-700">{req.destination}</td>
+                                                <td className="px-6 py-4 text-slate-500 font-bold">{new Date(req.start_datetime).toLocaleDateString()}</td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${req.status === 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-red-50 text-red-500'}`}>
+                                                        {req.status === 'completed' ? 'TRAVELLED' : 'REJECTED'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
 
-            {/* Approval Modal */}
+            {/* Other Modules Placeholder */}
+            {!['dashboard', 'approvals', 'approved-reservations', 'my-reservations', 'user-pending-approvals', 'past-bookings'].includes(activeSection) && (
+                <div className="animation-fade-in sar-card-gradient p-10 rounded-xl text-center">
+                    <i className={`fas ${activeSection === 'vehicles' ? 'fa-car' :
+                        activeSection === 'drivers' ? 'fa-users' :
+                            activeSection === 'maintenance' ? 'fa-tools' :
+                                'fa-chart-bar'
+                        } text-6xl text-gray-500 mb-6 text-slate-800`}></i>
+                    <h2 className="text-3xl font-bold mb-4 capitalize text-slate-800">{activeSection.replace('-', ' ')} Module</h2>
+                    <p className="text-gray-400 mb-8 max-w-lg mx-auto">
+                        The {activeSection.replace('-', ' ')} interface is currently under development. This section will allow you to manage {activeSection} records and view detailed analytics.
+                    </p>
+                    <button onClick={() => setActiveSection('dashboard')} className="sar-btn sar-btn-primary">
+                        <i className="fas fa-arrow-left mr-2"></i> Back to Dashboard
+                    </button>
+                </div>
+            )}
             {showApprovalModal && selectedRequest && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animation-fade-in">
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden">
-                        <div className="bg-[#660000] p-4 flex justify-between items-center">
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="bg-[#660000] p-4 flex justify-between items-center shrink-0">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                 <i className="fas fa-file-signature"></i> Review Request {selectedRequest.id}
                             </h3>
@@ -541,7 +646,7 @@ const SARDashboard = () => {
                                 <i className="fas fa-times"></i>
                             </button>
                         </div>
-                        <div className="p-6 space-y-4">
+                        <div className="p-6 space-y-4 overflow-y-auto">
                             {/* Warning Banner for Long Distance */}
                             {selectedRequest.distance > 100 && (
                                 <div className="bg-orange-50 border-l-4 border-orange-500 p-3 rounded text-sm text-orange-800 flex items-start gap-3">
@@ -566,36 +671,36 @@ const SARDashboard = () => {
 
                             <div className="bg-slate-50 p-4 rounded border border-slate-200 grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
                                 <div>
-                                    <p className="text-gray-400 text-xs">Destination Loop</p>
+                                    <p className="text-gray-400 text-xs text-slate-800 font-black uppercase">Distance Loop</p>
                                     <p className="font-semibold text-slate-700">{selectedRequest.distance} km</p>
                                 </div>
                                 <div>
-                                    <p className="text-gray-400 text-xs">Passengers</p>
+                                    <p className="text-gray-400 text-xs text-slate-800 font-black uppercase">Passengers</p>
                                     <p className="font-semibold text-slate-700">{selectedRequest.passengers}</p>
                                 </div>
                                 <div className="col-span-2">
-                                    <p className="text-gray-400 text-xs">Date & Time</p>
+                                    <p className="text-gray-400 text-xs text-slate-800 font-black uppercase">Date & Time</p>
                                     <p className="font-semibold text-slate-700">{selectedRequest.date} at {selectedRequest.time}</p>
                                 </div>
                                 <div className="col-span-2">
-                                    <p className="text-gray-400 text-xs">Purpose</p>
-                                    <p className="italic text-slate-600">"{selectedRequest.message}"</p>
+                                    <p className="text-gray-400 text-xs text-slate-800 font-black uppercase">Purpose</p>
+                                    <p className="italic text-slate-600 font-medium">"{selectedRequest.message}"</p>
                                 </div>
                                 {selectedRequest.remarks && (
                                     <div className="col-span-2">
-                                        <p className="text-gray-400 text-xs">Remarks</p>
+                                        <p className="text-gray-400 text-xs text-slate-800 font-black uppercase">Remarks</p>
                                         <p className="text-slate-700 bg-gray-50 p-2 rounded border-l-2 border-gray-300">{selectedRequest.remarks}</p>
                                     </div>
                                 )}
                                 {selectedRequest.emergency_contact && (
                                     <div className="col-span-2">
-                                        <p className="text-gray-400 text-xs">Emergency Contact</p>
-                                        <p className="text-slate-700 bg-gray-50 p-2 rounded border-l-2 border-gray-300">{selectedRequest.emergency_contact}</p>
+                                        <p className="text-gray-400 text-xs text-slate-800 font-black uppercase font-bold">Emergency Contact</p>
+                                        <p className="text-slate-700 bg-gray-50 p-2 rounded border-l-2 border-slate-300">{selectedRequest.emergency_contact}</p>
                                     </div>
                                 )}
                                 {selectedRequest.attachment_url && (
                                     <div className="col-span-2 mt-2">
-                                        <p className="text-gray-400 text-xs">Attachment</p>
+                                        <p className="text-gray-400 text-xs text-slate-800 font-bold uppercase">Attachment</p>
                                         <a href={`http://localhost:5000${selectedRequest.attachment_url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-2">
                                             <i className="fas fa-paperclip"></i> View Attached Document
                                         </a>
@@ -604,9 +709,9 @@ const SARDashboard = () => {
                             </div>
 
                             <div>
-                                <label className="block text-slate-700 text-sm font-medium mb-2">SAR Comments (Optional)</label>
+                                <label className="block text-slate-700 text-sm font-black uppercase mb-2">SAR Comments (Optional)</label>
                                 <textarea
-                                    className="w-full bg-white border border-slate-300 rounded-lg p-3 text-slate-800 focus:outline-none focus:border-[#660000] focus:ring-1 focus:ring-[#660000] transition-colors"
+                                    className="w-full bg-white border border-slate-300 rounded-lg p-3 text-slate-800 focus:outline-none focus:border-[#660000] focus:ring-1 focus:ring-[#660000] transition-colors shadow-sm"
                                     rows="2"
                                     placeholder="Add notes for Registrar or Rejection reason..."
                                     value={sarComment}
@@ -616,17 +721,15 @@ const SARDashboard = () => {
 
                             <div className="flex gap-3 pt-2">
                                 {selectedRequest.distance > 100 ? (
-                                    // Forward Option Only for Long Distance
-                                    <button onClick={() => handleProcessRequest('forward')} className="flex-1 sar-btn sar-btn-primary bg-orange-600 hover:bg-orange-700 border-orange-600 text-white">
+                                    <button onClick={() => handleProcessRequest('forward')} className="flex-1 sar-btn sar-btn-primary bg-orange-600 hover:bg-orange-700 border-orange-600 text-white font-bold h-10 uppercase text-xs tracking-widest shadow-lg">
                                         <i className="fas fa-share mr-1"></i> Forward to Registrar
                                     </button>
                                 ) : (
-                                    // Approve Option for Short Distance
-                                    <button onClick={() => handleProcessRequest('approve')} className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition shadow-sm">
+                                    <button onClick={() => handleProcessRequest('approve')} className="flex-1 bg-green-600 hover:bg-green-700 text-white font-black py-2 rounded-lg transition shadow-xl h-10 uppercase text-xs tracking-widest">
                                         <i className="fas fa-check mr-1"></i> Approve
                                     </button>
                                 )}
-                                <button onClick={() => handleProcessRequest('reject')} className="px-6 bg-red-100 hover:bg-red-200 text-red-700 font-bold py-2 rounded-lg transition border border-red-200">
+                                <button onClick={() => handleProcessRequest('reject')} className="px-6 bg-red-50 hover:bg-red-100 text-red-700 font-black py-2 rounded-lg transition border border-red-200 h-10 uppercase text-xs tracking-widest">
                                     Reject
                                 </button>
                             </div>

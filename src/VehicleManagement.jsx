@@ -13,6 +13,9 @@ import {
     ArcElement
 } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { motion, AnimatePresence } from 'framer-motion';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import './Dashboard.css';
 
 // Register ChartJS components
@@ -43,6 +46,21 @@ const VehicleManagement = () => {
     });
     const [maintenanceRecords, setMaintenanceRecords] = useState([]);
     const [selectedMaintenance, setSelectedMaintenance] = useState(null);
+
+    // Fuel States
+    const [fuelList, setFuelList] = useState([]);
+    const [fuelFormData, setFuelFormData] = useState({
+        vehicle_id: '',
+        date: new Date().toISOString().split('T')[0],
+        liters: '',
+        cost: ''
+    });
+    const [fuelReport, setFuelReport] = useState({ total_cost: 0, total_liters: 0 });
+    const [reportFilter, setReportFilter] = useState({
+        vehicle_id: 'all',
+        startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0]
+    });
 
     const [notification, setNotification] = useState({ message: '', type: '', visible: false });
 
@@ -110,7 +128,103 @@ const VehicleManagement = () => {
         fetchVehicles();
         fetchDrivers();
         fetchMaintenance();
+        fetchFuelRecords();
     }, []);
+
+    const fetchFuelRecords = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/fuel');
+            const data = await response.json();
+            if (response.ok) setFuelList(data);
+        } catch (error) {
+            console.error("Error fetching fuel:", error);
+        }
+    };
+
+    const fetchFuelReport = async () => {
+        try {
+            const query = new URLSearchParams(reportFilter).toString();
+            const response = await fetch(`http://localhost:5000/api/fuel/report?${query}`);
+            const data = await response.json();
+            if (response.ok) setFuelReport(data);
+        } catch (error) {
+            console.error("Error fetching fuel report:", error);
+        }
+    };
+
+    useEffect(() => {
+        if (activeSection === 'fuel-management') {
+            fetchFuelReport();
+        }
+    }, [activeSection, reportFilter]);
+
+    const handleFuelSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await fetch('http://localhost:5000/api/fuel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(fuelFormData)
+            });
+            if (response.ok) {
+                showNotification("Fuel record added successfully!");
+                setFuelFormData({
+                    vehicle_id: '',
+                    date: new Date().toISOString().split('T')[0],
+                    liters: '',
+                    cost: ''
+                });
+                fetchFuelRecords();
+                fetchFuelReport();
+            }
+        } catch (error) {
+            showNotification("Failed to add fuel record", "error");
+        }
+    };
+
+    const handleDownloadPDF = () => {
+        const doc = new jsPDF();
+
+        // Add Header
+        doc.setFontSize(18);
+        doc.setTextColor(128, 0, 0); // Maroon
+        doc.text("UNIVERSITY OF KELANIYA", 105, 15, { align: "center" });
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 0);
+        doc.text("Fuel Consumption Report", 105, 25, { align: "center" });
+
+        // Add Filter Info
+        doc.setFontSize(10);
+        doc.text(`Period: ${reportFilter.startDate} to ${reportFilter.endDate}`, 20, 40);
+        const vehicleInfo = reportFilter.vehicle_id === 'all' ? 'All Vehicles' : (vehicles.find(v => v.id == reportFilter.vehicle_id)?.number || 'Selected Vehicle');
+        doc.text(`Vehicle: ${vehicleInfo}`, 20, 45);
+
+        // Add Summary
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text(`Total Cost: LKR ${fuelReport.total_cost?.toLocaleString() || '0'}`, 20, 55);
+        doc.text(`Total Liters: ${fuelReport.total_liters || '0'} L`, 20, 62);
+
+        // Add Table
+        const tableData = fuelList.map(rec => [
+            new Date(rec.date).toLocaleDateString(),
+            rec.registration_number,
+            `${rec.liters} L`,
+            `Rs. ${rec.cost.toLocaleString()}`
+        ]);
+
+        autoTable(doc, {
+            startY: 70,
+            head: [['Date', 'Vehicle Reg', 'Liters', 'Cost (LKR)']],
+            body: tableData,
+            headStyles: { fillStyle: 'maroon', fillColor: [128, 0, 0] },
+            alternateRowStyles: { fillColor: [245, 245, 245] },
+        });
+
+        const fileName = `Fuel_Report_${reportFilter.startDate}_to_${reportFilter.endDate}.pdf`;
+        doc.save(fileName);
+        showNotification("PDF Report Generated Successfully!");
+    };
 
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -693,28 +807,164 @@ const VehicleManagement = () => {
                         <div className="section animation-fade-in">
                             <div className="section-header"><h2><i className="fas fa-gas-pump mr-2"></i> Fuel Management</h2></div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                                    <h3 className="text-lg font-bold text-slate-800 mb-4">Fuel Consumption Overview</h3>
-                                    <div className="h-64">
-                                        <Bar data={fuelChartData} options={{ responsive: true, plugins: { legend: { position: 'bottom' } } }} />
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 text-slate-800">
+                                <div className="p-6 rounded-2xl bg-gradient-to-br from-white to-red-50 shadow-sm border border-red-100 hover:shadow-md transition-all duration-300">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-red-500 text-[10px] font-bold uppercase tracking-wider">Total Fuel Cost</span>
+                                        <i className="fas fa-wallet text-red-400 text-sm opacity-60"></i>
                                     </div>
+                                    <h4 className="text-2xl font-black text-slate-800">LKR {fuelReport.total_cost?.toLocaleString() || '0'}</h4>
+                                    <p className="text-[10px] text-red-400 mt-1 font-medium bg-red-50 px-2 py-0.5 rounded inline-block">For selected period</p>
                                 </div>
-                                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                                    <h3 className="text-lg font-bold text-slate-800 mb-4">Recent Fuel Records</h3>
-                                    <div className="overflow-y-auto h-64 pr-2 space-y-3">
-                                        {fuelRecords.map((rec, i) => (
-                                            <div key={i} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                                <div>
-                                                    <p className="font-bold text-slate-800 text-sm">{rec.vehicle}</p>
-                                                    <p className="text-xs text-slate-500">{rec.date} • {rec.driver}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="font-bold text-slate-800 text-sm">{rec.liters} L</p>
-                                                    <p className="text-xs text-slate-600">Rs. {rec.cost}</p>
-                                                </div>
+                                <div className="p-6 rounded-2xl bg-gradient-to-br from-white to-red-50 shadow-sm border border-red-100 hover:shadow-md transition-all duration-300">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-red-500 text-[10px] font-bold uppercase tracking-wider">Total Liters</span>
+                                        <i className="fas fa-gas-pump text-red-400 text-sm opacity-60"></i>
+                                    </div>
+                                    <h4 className="text-2xl font-black text-slate-800">{fuelReport.total_liters || '0'} <span className="text-xs font-normal text-slate-400">L</span></h4>
+                                    <p className="text-[10px] text-red-400 mt-1 font-medium bg-red-50 px-2 py-0.5 rounded inline-block">For selected period</p>
+                                </div>
+                                <div className="p-6 rounded-2xl bg-gradient-to-br from-white to-red-50 shadow-sm border border-red-100 hover:shadow-md transition-all duration-300">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-red-500 text-[10px] font-bold uppercase tracking-wider">Vehicles Tracked</span>
+                                        <i className="fas fa-check-circle text-red-400 text-sm opacity-60"></i>
+                                    </div>
+                                    <h4 className="text-2xl font-black text-slate-800">{reportFilter.vehicle_id === 'all' ? vehicles.length : 1}</h4>
+                                    <p className="text-[10px] text-red-400 mt-1 font-medium bg-red-50 px-2 py-0.5 rounded inline-block">Active in query</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Add Record Form */}
+                                <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                                    <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                        <span className="w-8 h-8 rounded-lg bg-maroon/10 text-maroon flex items-center justify-center"><i className="fas fa-plus text-xs"></i></span>
+                                        Add Daily Fuel Entry
+                                    </h3>
+                                    <form onSubmit={handleFuelSubmit} className="space-y-5">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Select Vehicle</label>
+                                            <select
+                                                required
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-maroon outline-none"
+                                                value={fuelFormData.vehicle_id}
+                                                onChange={(e) => setFuelFormData({ ...fuelFormData, vehicle_id: e.target.value })}
+                                            >
+                                                <option value="">Select a vehicle</option>
+                                                {vehicles.map(v => <option key={v.id} value={v.id}>{v.number} - {v.make}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Date</label>
+                                                <input
+                                                    type="date"
+                                                    required
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm"
+                                                    value={fuelFormData.date}
+                                                    onChange={(e) => setFuelFormData({ ...fuelFormData, date: e.target.value })}
+                                                />
                                             </div>
-                                        ))}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Liters (L)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    required
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm"
+                                                    placeholder="0.00"
+                                                    value={fuelFormData.liters}
+                                                    onChange={(e) => setFuelFormData({ ...fuelFormData, liters: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Total Cost (LKR)</label>
+                                                <input
+                                                    type="number"
+                                                    required
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-maroon"
+                                                    placeholder="0"
+                                                    value={fuelFormData.cost}
+                                                    onChange={(e) => setFuelFormData({ ...fuelFormData, cost: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            style={{ color: 'white' }}
+                                            className="w-full bg-[#800000] py-4 rounded-xl font-bold hover:bg-[#660000] transition-all transform hover:-translate-y-0.5 shadow-sm mt-4 border-2 border-transparent hover:border-white"
+                                        >
+                                            Save Fuel Entry
+                                        </button>
+                                    </form>
+                                </div>
+
+                                {/* Reports & History */}
+                                <div className="space-y-6">
+                                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                        <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                            <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i className="fas fa-filter text-xs"></i></span>
+                                            Filter Consumption Report
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="md:col-span-2">
+                                                <select
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm"
+                                                    value={reportFilter.vehicle_id}
+                                                    onChange={(e) => setReportFilter({ ...reportFilter, vehicle_id: e.target.value })}
+                                                >
+                                                    <option value="all">All Vehicles</option>
+                                                    {vehicles.map(v => <option key={v.id} value={v.id}>{v.number}</option>)}
+                                                </select>
+                                            </div>
+                                            <input
+                                                type="date"
+                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm"
+                                                value={reportFilter.startDate}
+                                                onChange={(e) => setReportFilter({ ...reportFilter, startDate: e.target.value })}
+                                            />
+                                            <input
+                                                type="date"
+                                                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm"
+                                                value={reportFilter.endDate}
+                                                onChange={(e) => setReportFilter({ ...reportFilter, endDate: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Filtered Summary:</span>
+                                            <div className="text-right">
+                                                <p className="text-sm font-black text-maroon">LKR {fuelReport.total_cost?.toLocaleString() || '0'}</p>
+                                                <p className="text-[10px] text-slate-400 font-bold">{fuelReport.total_liters || '0'} Liters Total</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleDownloadPDF}
+                                            style={{ color: 'white' }}
+                                            className="w-full mt-6 bg-[#800000] py-4 rounded-xl text-xs font-black hover:bg-[#660000] transition-all flex items-center justify-center gap-3 border-2 border-white uppercase tracking-[0.2em]"
+                                        >
+                                            <i className="fas fa-file-pdf text-base" style={{ color: 'white' }}></i> GENERATE PDF REPORT
+                                        </button>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm max-h-[400px] overflow-hidden flex flex-col">
+                                        <h3 className="text-md font-bold text-slate-800 mb-4 px-2">Recent Consumption History</h3>
+                                        <div className="overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                                            {fuelList.map((rec, i) => (
+                                                <div key={i} className="flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-100 transition-colors">
+                                                    <div>
+                                                        <p className="font-bold text-slate-800 text-sm">{rec.registration_number}</p>
+                                                        <p className="text-[10px] text-slate-500 uppercase tracking-tighter">{new Date(rec.date).toLocaleDateString()}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-black text-maroon text-sm">Rs. {rec.cost.toLocaleString()}</p>
+                                                        <p className="text-[10px] text-slate-400 font-bold">{rec.liters} Liters</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {fuelList.length === 0 && <p className="text-center py-8 text-slate-400 text-sm italic">No entries found yet.</p>}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -118,3 +118,46 @@ export const getMaintenanceStats = async (req, res) => {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
+// @desc    Get maintenance daily costs
+// @route   GET /api/maintenance/daily-costs
+// @access  Private
+export const getMaintenanceDailyCosts = async (req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT DATE(service_date) as date, SUM(cost) as total_cost 
+            FROM maintenance_records 
+            WHERE service_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            GROUP BY DATE(service_date)
+            ORDER BY date ASC
+        `);
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching daily maintenance costs:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+// @desc    Get maintenance report
+// @route   GET /api/maintenance/report
+// @access  Private
+export const getMaintenanceReport = async (req, res) => {
+    const { vehicle_id, startDate, endDate } = req.query;
+    try {
+        let query = `
+            SELECT SUM(cost) as total_cost, COUNT(*) as total_records 
+            FROM maintenance_records 
+            WHERE service_date BETWEEN ? AND ?
+        `;
+        const params = [startDate, endDate];
+
+        if (vehicle_id && vehicle_id !== 'all') {
+            query += ' AND vehicle_id = ?';
+            params.push(vehicle_id);
+        }
+
+        const [rows] = await db.query(query, params);
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('Error fetching maintenance report:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};

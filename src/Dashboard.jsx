@@ -568,21 +568,23 @@ const Dashboard = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {reservations.filter(r => String(r.requester_id) === String(currentUser.id) && r.status !== 'completed' && r.status !== 'rejected').map(r => (
+                                        {reservations.filter(r => String(r.requester_id) === String(currentUser.id) && r.status !== 'completed').map(r => (
                                             <tr key={r.reservation_id}>
                                                 <td><strong>REQ-{r.reservation_id}</strong></td>
                                                 <td>{new Date(r.start_datetime).toLocaleDateString()}</td>
                                                 <td>{new Date(r.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                                                 <td>{r.destination}</td>
                                                 <td>
-                                                    <span className={`badge ${r.status === 'approved' ? 'badge-success' : r.status === 'pending' ? 'badge-warning' : 'badge-info'}`}>
-                                                        {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
+                                                    <span className={`badge ${r.status === 'approved' ? 'badge-success' : r.status === 'rejected' ? 'badge-danger' : r.status === 'pending' ? 'badge-warning' : 'badge-info'}`}>
+                                                        {r.status === 'rejected' ?
+                                                            `Rejected by ${r.hod_approval_status === 'rejected' ? 'HOD' : r.dean_approval_status === 'rejected' ? 'Dean' : r.sar_approval_status === 'rejected' ? 'SAR' : r.registrar_approval_status === 'rejected' ? 'Registrar' : 'Admin'}`
+                                                            : r.status.charAt(0).toUpperCase() + r.status.slice(1)}
                                                     </span>
                                                 </td>
                                                 <td>{r.model ? `${r.model} (${r.registration_number})` : 'To Be Assigned'}</td>
                                             </tr>
                                         ))}
-                                        {reservations.filter(r => String(r.requester_id) === String(currentUser.id) && r.status !== 'completed' && r.status !== 'rejected').length === 0 && (
+                                        {reservations.filter(r => String(r.requester_id) === String(currentUser.id) && r.status !== 'completed').length === 0 && (
                                             <tr><td colSpan="6" className="text-center p-4 text-gray-500">No upcoming reservations found.</td></tr>
                                         )}
                                     </tbody>
@@ -605,7 +607,7 @@ const Dashboard = () => {
                                             <th>Ref No</th>
                                             <th>Requested Date</th>
                                             <th>Purpose</th>
-                                            <th>Current Stage</th>
+                                            <th>Status</th>
                                             <th>Submitted On</th>
                                             <th>Actions</th>
                                         </tr>
@@ -616,7 +618,11 @@ const Dashboard = () => {
                                                 <td><strong>REQ-{r.reservation_id}</strong></td>
                                                 <td>{new Date(r.start_datetime).toLocaleDateString()}</td>
                                                 <td>{r.description || 'General Transport'}</td>
-                                                <td><span className="badge badge-warning">Pending Review</span></td>
+                                                <td>
+                                                    <span className="badge badge-warning">
+                                                        {r.status === 'pending' ? 'Pending HOD' : r.status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                                    </span>
+                                                </td>
                                                 <td>{new Date(r.created_at || Date.now()).toLocaleDateString()}</td>
                                                 <td>
                                                     <div className="action-btns">
@@ -649,7 +655,7 @@ const Dashboard = () => {
                                             <th>Destination</th>
                                             <th>Vehicle</th>
                                             <th>Driver</th>
-                                            <th>Rating</th>
+                                            <th>Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -660,11 +666,11 @@ const Dashboard = () => {
                                                 <td>{r.model || (r.status === 'rejected' ? 'N/A' : 'Unassigned')}</td>
                                                 <td>{/* Driver info not available in this fetch yet, use placeholder or extended fetch later */ "Assigned Driver"}</td>
                                                 <td>
-                                                    {r.status === 'rejected' ? (
-                                                        <span className="badge badge-danger">Rejected</span>
-                                                    ) : (
-                                                        <span className="text-yellow-500"><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i></span>
-                                                    )}
+                                                    <span className={`badge ${r.status === 'rejected' ? 'badge-danger' : r.status === 'completed' ? 'badge-success' : 'badge-info'}`}>
+                                                        {r.status === 'rejected' ?
+                                                            `Rejected by ${r.hod_approval_status === 'rejected' ? 'HOD' : r.dean_approval_status === 'rejected' ? 'Dean' : r.sar_approval_status === 'rejected' ? 'SAR' : r.registrar_approval_status === 'rejected' ? 'Registrar' : 'Admin'}`
+                                                            : r.status.charAt(0).toUpperCase() + r.status.slice(1)}
+                                                    </span>
                                                 </td>
                                             </tr>
                                         ))}

@@ -186,21 +186,21 @@ const DeanDashboard = () => {
     return (
         <div className="dean-dashboard-container">
             {/* Sidebar */}
-            <div className={`sidebar ${sidebarOpen ? 'open' : ''} bg-[#400f0f] border-r border-[#F6DD26]/20 w-80 fixed h-full z-40 transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                <div className="p-6 border-b border-gray-700">
+            <div className={`sidebar ${sidebarOpen ? 'open' : ''} bg-[#400f0f] border-r border-[#F6DD26]/20 w-80 fixed h-full z-40 transition-transform duration-300 flex flex-col lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="p-6 border-b border-gray-700 shrink-0">
                     <h1 className="text-2xl font-bold text-white mb-1">Dean Dashboard</h1>
                     <p className="text-sm text-gray-400">Faculty Management Panel</p>
                 </div>
 
-                <nav className="p-4 space-y-2 pb-24 overflow-y-auto h-[calc(100vh-180px)]">
+                <nav className="p-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar">
                     {[
                         { id: 'dashboard', label: 'Dashboard', sub: 'Overview & metrics', icon: 'fa-tachometer-alt' },
                         { id: 'pending-approvals', label: 'Approvals', sub: 'Request Review', icon: 'fa-file-signature', badge: pendingRequests.length },
                         { id: 'approved-reservations', label: 'Approved Reservations', sub: 'Status Overview', icon: 'fa-check-double' },
                         { id: 'faculty-overview', label: 'Faculty Overview', sub: 'Faculty statistics', icon: 'fa-university' },
                         { id: 'departments', label: 'Departments', sub: 'Department management', icon: 'fa-building' },
-                        { id: 'reports', label: 'Reports', sub: 'Faculty reports', icon: 'fa-chart-bar' },
-                        { id: 'analytics', label: 'Analytics', sub: 'Performance metrics', icon: 'fa-chart-line' }
+                        { id: 'analytics', label: 'Analytics', sub: 'Reports & Trends', icon: 'fa-chart-line' },
+                        { id: 'settings', label: 'Settings', sub: 'Preferences', icon: 'fa-cog' },
                     ].map(item => (
                         <div
                             key={item.id}
@@ -219,9 +219,26 @@ const DeanDashboard = () => {
                             </div>
                         </div>
                     ))}
+
+                    <div className="pt-4 border-t border-white/5 mt-4">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-4">Your Reservations</p>
+                        {[
+                            { id: 'new-booking', label: 'New Booking', icon: 'fa-calendar-plus', action: () => navigate('/reservation') },
+                            { id: 'my-reservations', label: 'My Reservations', icon: 'fa-calendar-check' },
+                            { id: 'user-pending-approvals', label: 'Pending My Bookings', icon: 'fa-clock' },
+                            { id: 'past-bookings', label: 'Past Bookings', icon: 'fa-history' }
+                        ].map(item => (
+                            <div key={item.id}
+                                className={`nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition ${activeSection === item.id ? 'active bg-white/10 text-yellow-400 border-l-4 border-yellow-400 font-bold' : ''}`}
+                                onClick={() => item.action ? item.action() : setActiveSection(item.id)}>
+                                <i className={`fas ${item.icon} text-lg w-6 text-center`}></i>
+                                <div className="flex-1 text-sm font-medium">{item.label}</div>
+                            </div>
+                        ))}
+                    </div>
                 </nav>
 
-                <div className="fixed bottom-0 left-0 w-80 p-4 bg-[#400f0f] border-t border-[#F6DD26]/20">
+                <div className="p-4 bg-[#400f0f] border-t border-[#F6DD26]/20 shrink-0">
                     <button onClick={logout} className="w-full p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition duration-200 flex items-center justify-center text-gray-200 font-medium">
                         <i className="fas fa-sign-out-alt mr-2"></i> Logout
                     </button>
@@ -315,7 +332,7 @@ const DeanDashboard = () => {
                                     <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
                                         <div className="flex justify-between items-center mb-6">
                                             <h3 className="text-xl font-bold text-slate-800">Pending Approvals</h3>
-                                            <button onClick={() => setActiveSection('pending-approvals')} className="text-[#660000] hover:text-[#800000] text-sm font-medium hover:underline">View All</button>
+                                            <button onClick={() => handleSectionChange('pending-approvals')} className="text-[#660000] hover:text-[#800000] text-sm font-medium hover:underline">View All</button>
                                         </div>
                                         {pendingRequests.length === 0 ? (
                                             <div className="text-center py-10 text-gray-500">
@@ -440,181 +457,248 @@ const DeanDashboard = () => {
 
                     {/* Approved Reservations Module */}
                     {activeSection === 'approved-reservations' && (
-                        <div className="animation-fade-in space-y-6">
-                            <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-lg p-6 text-white mb-6 shadow-lg flex justify-between items-center">
-                                <div>
-                                    <h2 className="text-2xl font-bold mb-1">Approved Reservations</h2>
-                                    <p className="text-green-100 opacity-90">Overview of confirmed vehicle requests</p>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse">
-                                        <thead>
-                                            <tr className="bg-slate-50 border-b border-gray-200 text-gray-500 text-sm uppercase">
-                                                <th className="px-6 py-4 font-semibold">Requester</th>
-                                                <th className="px-6 py-4 font-semibold">Trip Details</th>
-                                                <th className="px-6 py-4 font-semibold">Date</th>
-                                                <th className="px-6 py-4 font-semibold text-right">Status</th>
+                        <div className="animation-fade-in card-gradient p-6 rounded-xl">
+                            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <i className="fas fa-check-double text-green-600"></i> Approved Reservations
+                            </h2>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                        <tr>
+                                            <th className="px-4 py-3 text-slate-500">Department</th>
+                                            <th className="px-4 py-3 text-slate-500">Destination</th>
+                                            <th className="px-4 py-3 text-slate-500">Date</th>
+                                            <th className="px-4 py-3 text-slate-500 text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 italic text-slate-600">
+                                        {reservations.filter(r => r.status === 'approved').map(req => (
+                                            <tr key={req.reservation_id} className="hover:bg-slate-50 transition">
+                                                <td className="px-4 py-3 text-slate-700 font-medium">{req.department || 'N/A'}</td>
+                                                <td className="px-4 py-3">{req.destination}</td>
+                                                <td className="px-4 py-3">{new Date(req.start_datetime).toLocaleDateString()}</td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">APPROVED</span>
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody className="text-sm divide-y divide-gray-100">
-                                            {reservations.filter(r => r.status === 'approved').map(req => (
-                                                <tr key={req.reservation_id} className="hover:bg-slate-50 transition-colors">
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">
-                                                                {(req.first_name || 'S').charAt(0)}
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-bold text-slate-800">{req.first_name} {req.last_name}</p>
-                                                                <p className="text-xs text-gray-500">{req.department || 'N/A'}</p>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <p className="font-medium text-slate-800">{req.destination}</p>
-                                                        <p className="text-xs text-gray-500 mt-1">{req.distance_km} km • {req.passengers_count} Pax</p>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        {new Date(req.start_datetime).toLocaleDateString()}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
-                                                            <i className="fas fa-check-circle mr-1"></i> Approved
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            {reservations.filter(r => r.status === 'approved').length === 0 && (
-                                                <tr>
-                                                    <td colSpan="4" className="text-center py-8 text-gray-400">No approved reservations found.</td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        ))}
+                                        {reservations.filter(r => r.status === 'approved').length === 0 && (
+                                            <tr><td colSpan="4" className="px-4 py-8 text-center text-slate-400">No approved reservations yet.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     )}
 
-                    {['faculty-overview', 'departments', 'reports', 'analytics'].includes(activeSection) && (
-                        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-slate-200">
-                            <i className="fas fa-tools text-6xl text-slate-200 mb-6"></i>
-                            <h2 className="text-2xl font-bold text-slate-800 mb-2 capitalize">{activeSection.replace('-', ' ')}</h2>
-                            <p className="text-slate-500 max-w-md text-center">Implementation pending.</p>
-                            <button onClick={() => setActiveSection('dashboard')} className="mt-6 text-[#660000] hover:underline font-medium">
-                                Back to Dashboard
-                            </button>
+                    {activeSection === 'my-reservations' && (
+                        <div className="animation-fade-in card-gradient p-6 rounded-xl">
+                            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <i className="fas fa-calendar-check text-blue-600"></i> My Reservations
+                            </h2>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                        <tr>
+                                            <th className="px-4 py-3">Destination</th>
+                                            <th className="px-4 py-3">Date & Time</th>
+                                            <th className="px-4 py-3 text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {reservations.filter(r => String(r.requester_id) === String(user.id) && r.status !== 'completed' && r.status !== 'rejected').map(req => (
+                                            <tr key={req.reservation_id} className="hover:bg-slate-50 transition">
+                                                <td className="px-4 py-3 font-medium text-slate-700">{req.destination}</td>
+                                                <td className="px-4 py-3 text-slate-600">{new Date(req.start_datetime).toLocaleDateString()} at {new Date(req.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${req.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                        {req.status.toUpperCase()}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
-                </div>
-            </div>
+
+                    {activeSection === 'user-pending-approvals' && (
+                        <div className="animation-fade-in card-gradient p-6 rounded-xl">
+                            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <i className="fas fa-clock text-orange-600"></i> Pending My Bookings
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {reservations.filter(r => String(r.requester_id) === String(user.id) && (r.status === 'pending' || r.status.startsWith('pending_'))).map(req => (
+                                    <div key={req.reservation_id} className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="font-bold text-slate-800">{req.destination}</h3>
+                                            <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-[10px] font-black uppercase whitespace-nowrap">
+                                                {req.status === 'pending' ? 'Pending HOD' : req.status.replace('pending_', 'Pending ').toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-500">{new Date(req.start_datetime).toLocaleDateString()} at {new Date(req.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                    </div>
+                                ))}
+                                {reservations.filter(r => String(r.requester_id) === String(user.id) && (r.status === 'pending' || r.status.startsWith('pending_'))).length === 0 && (
+                                    <p className="col-span-2 text-center text-slate-400 py-8 italic">No pending requests found.</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeSection === 'past-bookings' && (
+                        <div className="animation-fade-in card-gradient p-6 rounded-xl">
+                            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <i className="fas fa-history text-slate-600"></i> Past Bookings
+                            </h2>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                        <tr>
+                                            <th className="px-4 py-3">Destination</th>
+                                            <th className="px-4 py-3">Date</th>
+                                            <th className="px-4 py-3 text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {reservations.filter(r => String(r.requester_id) === String(user.id) && (r.status === 'completed' || r.status === 'rejected')).map(req => (
+                                            <tr key={req.reservation_id} className="hover:bg-slate-50 transition">
+                                                <td className="px-4 py-3 font-medium text-slate-700">{req.destination}</td>
+                                                <td className="px-4 py-3 text-slate-600">{new Date(req.start_datetime).toLocaleDateString()}</td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${req.status === 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                                                        {req.status.toUpperCase()}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {
+                        ['faculty-overview', 'departments', 'reports', 'analytics'].includes(activeSection) && (
+                            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-slate-200">
+                                <i className="fas fa-tools text-6xl text-slate-200 mb-6"></i>
+                                <h2 className="text-2xl font-bold text-slate-800 mb-2 capitalize">{activeSection.replace('-', ' ')}</h2>
+                                <p className="text-slate-500 max-w-md text-center">Implementation pending.</p>
+                                <button onClick={() => setActiveSection('dashboard')} className="mt-6 text-[#660000] hover:underline font-medium">
+                                    Back to Dashboard
+                                </button>
+                            </div>
+                        )
+                    }
+                </div >
+            </div >
 
             {/* Approval Modal - Updated to match SAR Style */}
-            {showModal && selectedRequest && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animation-fade-in">
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden">
-                        <div className="bg-[#660000] p-4 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                <i className="fas fa-file-signature"></i> Review Request {selectedRequest.id}
-                            </h3>
-                            <button onClick={() => setShowModal(false)} className="text-white/80 hover:text-white transition">
-                                <i className="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            {/* Warning Banner for Long Distance */}
-                            {selectedRequest.distance > 100 && (
-                                <div className="bg-orange-50 border-l-4 border-orange-500 p-3 rounded text-sm text-orange-800 flex items-start gap-3">
-                                    <i className="fas fa-exclamation-triangle mt-0.5"></i>
+            {
+                showModal && selectedRequest && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animation-fade-in">
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                            <div className="bg-[#660000] p-4 flex justify-between items-center shrink-0">
+                                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                    <i className="fas fa-file-signature"></i> Review Request {selectedRequest.id}
+                                </h3>
+                                <button onClick={() => setShowModal(false)} className="text-white/80 hover:text-white transition">
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div className="p-6 space-y-4 overflow-y-auto">
+                                {/* Warning Banner for Long Distance */}
+                                {selectedRequest.distance > 100 && (
+                                    <div className="bg-orange-50 border-l-4 border-orange-500 p-3 rounded text-sm text-orange-800 flex items-start gap-3">
+                                        <i className="fas fa-exclamation-triangle mt-0.5"></i>
+                                        <div>
+                                            <p className="font-bold">Forwarding Required</p>
+                                            <p className="opacity-90">Distance &gt; 100km. Your approval will forward this to the Registrar.</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div>
-                                        <p className="font-bold">Forwarding Required</p>
-                                        <p className="opacity-90">Distance &gt; 100km. Your approval will forward this to the Registrar.</p>
+                                        <p className="text-slate-500 text-xs uppercase font-bold">Lecturer</p>
+                                        <p className="text-slate-800 font-medium text-base">{selectedRequest.lecturer}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-slate-500 text-xs uppercase font-bold">Department</p>
+                                        <p className="text-slate-800 font-medium">{selectedRequest.department}</p>
                                     </div>
                                 </div>
-                            )}
 
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <p className="text-slate-500 text-xs uppercase font-bold">Lecturer</p>
-                                    <p className="text-slate-800 font-medium text-base">{selectedRequest.lecturer}</p>
-                                </div>
-                                <div>
-                                    <p className="text-slate-500 text-xs uppercase font-bold">Department</p>
-                                    <p className="text-slate-800 font-medium">{selectedRequest.department}</p>
-                                </div>
-                            </div>
-
-                            <div className="bg-slate-50 p-4 rounded border border-slate-200 grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
-                                <div>
-                                    <p className="text-gray-400 text-xs">Destination</p>
-                                    <p className="font-semibold text-slate-700">{selectedRequest.destination}</p>
-                                </div>
-                                <div>
-                                    <p className="text-gray-400 text-xs">Distance</p>
-                                    <p className="font-semibold text-slate-700">{selectedRequest.distance} km</p>
-                                </div>
-                                <div className="col-span-2">
-                                    <p className="text-gray-400 text-xs">Date & Time</p>
-                                    <p className="font-semibold text-slate-700">{selectedRequest.date} at {selectedRequest.time}</p>
-                                </div>
-                                <div className="col-span-2">
-                                    <p className="text-gray-400 text-xs">Purpose</p>
-                                    <p className="italic text-slate-600">"{selectedRequest.purpose}"</p>
-                                </div>
-                                {selectedRequest.remarks && (
+                                <div className="bg-slate-50 p-4 rounded border border-slate-200 grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
+                                    <div>
+                                        <p className="text-gray-400 text-xs">Destination</p>
+                                        <p className="font-semibold text-slate-700">{selectedRequest.destination}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-400 text-xs">Distance</p>
+                                        <p className="font-semibold text-slate-700">{selectedRequest.distance} km</p>
+                                    </div>
                                     <div className="col-span-2">
-                                        <p className="text-gray-400 text-xs">Remarks</p>
-                                        <p className="text-slate-700 bg-gray-50 p-2 rounded border-l-2 border-gray-300">{selectedRequest.remarks}</p>
+                                        <p className="text-gray-400 text-xs">Date & Time</p>
+                                        <p className="font-semibold text-slate-700">{selectedRequest.date} at {selectedRequest.time}</p>
                                     </div>
-                                )}
-                                {selectedRequest.emergency_contact && (
                                     <div className="col-span-2">
-                                        <p className="text-gray-400 text-xs">Emergency Contact</p>
-                                        <p className="text-slate-700 bg-gray-50 p-2 rounded border-l-2 border-gray-300">{selectedRequest.emergency_contact}</p>
+                                        <p className="text-gray-400 text-xs">Purpose</p>
+                                        <p className="italic text-slate-600">"{selectedRequest.purpose}"</p>
                                     </div>
-                                )}
-                                {selectedRequest.attachment_url && (
-                                    <div className="col-span-2 mt-2">
-                                        <p className="text-gray-400 text-xs">Attachment</p>
-                                        <a href={`http://localhost:5000${selectedRequest.attachment_url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-2">
-                                            <i className="fas fa-paperclip"></i> View Attached Document
-                                        </a>
+                                    {selectedRequest.remarks && (
+                                        <div className="col-span-2">
+                                            <p className="text-gray-400 text-xs">Remarks</p>
+                                            <p className="text-slate-700 bg-gray-50 p-2 rounded border-l-2 border-gray-300">{selectedRequest.remarks}</p>
+                                        </div>
+                                    )}
+                                    {selectedRequest.emergency_contact && (
+                                        <div className="col-span-2">
+                                            <p className="text-gray-400 text-xs">Emergency Contact</p>
+                                            <p className="text-slate-700 bg-gray-50 p-2 rounded border-l-2 border-gray-300">{selectedRequest.emergency_contact}</p>
+                                        </div>
+                                    )}
+                                    {selectedRequest.attachment_url && (
+                                        <div className="col-span-2 mt-2">
+                                            <p className="text-gray-400 text-xs">Attachment</p>
+                                            <a href={`http://localhost:5000${selectedRequest.attachment_url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-2">
+                                                <i className="fas fa-paperclip"></i> View Attached Document
+                                            </a>
+                                        </div>
+                                    )}
+                                    <div className="col-span-2 bg-green-50 p-2 rounded border border-green-100">
+                                        <p className="text-xs text-green-700 font-bold">HOD Comments:</p>
+                                        <p className="text-xs text-green-800">"{selectedRequest.hodComments}"</p>
                                     </div>
-                                )}
-                                <div className="col-span-2 bg-green-50 p-2 rounded border border-green-100">
-                                    <p className="text-xs text-green-700 font-bold">HOD Comments:</p>
-                                    <p className="text-xs text-green-800">"{selectedRequest.hodComments}"</p>
                                 </div>
-                            </div>
 
-                            <div>
-                                <label className="block text-slate-700 text-sm font-medium mb-2">Dean Comments (Optional)</label>
-                                <textarea
-                                    className="w-full bg-white border border-slate-300 rounded-lg p-3 text-slate-800 focus:outline-none focus:border-[#660000] focus:ring-1 focus:ring-[#660000] transition-colors"
-                                    rows="2"
-                                    placeholder="Add notes for Registrar or Rejection reason..."
-                                    value={deanComment}
-                                    onChange={(e) => setDeanComment(e.target.value)}
-                                ></textarea>
-                            </div>
+                                <div>
+                                    <label className="block text-slate-700 text-sm font-medium mb-2">Dean Comments (Optional)</label>
+                                    <textarea
+                                        className="w-full bg-white border border-slate-300 rounded-lg p-3 text-slate-800 focus:outline-none focus:border-[#660000] focus:ring-1 focus:ring-[#660000] transition-colors"
+                                        rows="2"
+                                        placeholder="Add notes for Registrar or Rejection reason..."
+                                        value={deanComment}
+                                        onChange={(e) => setDeanComment(e.target.value)}
+                                    ></textarea>
+                                </div>
 
-                            <div className="flex gap-3 pt-2">
-                                <button onClick={() => processApproval('approved')} className="flex-1 btn btn-success">
-                                    <i className={`${selectedRequest.distance > 100 ? 'fas fa-share' : 'fas fa-check'} mr-1`}></i>
-                                    {selectedRequest.distance > 100 ? 'Approve & Forward' : 'Approve'}
-                                </button>
-                                <button onClick={() => processApproval('rejected')} className="flex-1 btn btn-danger">
-                                    <i className="fas fa-times mr-1"></i> Reject
-                                </button>
+                                <div className="flex gap-3 pt-2">
+                                    <button onClick={() => processApproval('approved')} className="flex-1 btn btn-success">
+                                        <i className={`${selectedRequest.distance > 100 ? 'fas fa-share' : 'fas fa-check'} mr-1`}></i>
+                                        {selectedRequest.distance > 100 ? 'Approve & Forward' : 'Approve'}
+                                    </button>
+                                    <button onClick={() => processApproval('rejected')} className="flex-1 btn btn-danger">
+                                        <i className="fas fa-times mr-1"></i> Reject
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

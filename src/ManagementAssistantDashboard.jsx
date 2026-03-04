@@ -62,30 +62,48 @@ const ManagementAssistantDashboard = () => {
     return (
         <div className="sar-dashboard-container">
             {/* Left Sidebar */}
-            <div className={`sidebar bg-gradient-to-b from-[#1a0505] to-[#2d0a0a] border-none w-80 fixed h-full z-40 transition-transform duration-300 overflow-y-auto ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-                <div className="p-6 border-b border-white/10">
+            <div className={`sidebar bg-gradient-to-b from-[#1a0505] to-[#2d0a0a] border-none w-80 fixed h-full z-40 transition-transform duration-300 flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+                <div className="p-6 border-b border-white/10 shrink-0">
                     <h1 className="text-2xl font-bold text-white mb-2">Management Assistant</h1>
                     <p className="text-sm text-gray-400">System Dashboard Panel</p>
                 </div>
 
-                <nav className="p-4 space-y-2 pb-24">
+                <nav className="p-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar">
                     {[
                         { id: 'dashboard', label: 'Dashboard', sub: 'Overview & metrics', icon: 'fa-tachometer-alt' },
                         { id: 'approved-reservations', label: 'Approved Reservations', sub: 'Status Overview', icon: 'fa-check-double' },
-
+                        { id: 'reports', label: 'Reports', sub: 'Generate Reports', icon: 'fa-file-alt' },
+                        { id: 'settings', label: 'Settings', sub: 'System Config', icon: 'fa-cog' },
                     ].map(item => (
                         <div
                             key={item.id}
-                            className={`nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition ${activeSection === item.id ? 'active bg-white/10 text-yellow-400 border-l-4 border-yellow-400' : ''}`}
-                            onClick={() => setActiveSection(item.id)}
+                            className={`nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition ${activeTab === item.id ? 'active bg-white/10 text-yellow-400 border-l-4 border-yellow-400 font-bold shadow-lg shadow-black/20' : ''}`}
+                            onClick={() => setActiveTab(item.id)}
                         >
                             <i className={`fas ${item.icon} text-lg w-6 text-center`}></i>
                             <div className="flex-1">
-                                <div className="font-medium">{item.label}</div>
-                                <div className={`text-xs ${activeSection === item.id ? 'text-yellow-500/80' : 'text-gray-400'}`}>{item.sub}</div>
+                                <div className="font-medium text-sm">{item.label}</div>
+                                <div className="text-[10px] opacity-60 uppercase tracking-tighter">{item.sub}</div>
                             </div>
                         </div>
                     ))}
+
+                    <div className="pt-6 border-t border-white/5 mt-4 space-y-1">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-4">Reservation Portal</p>
+                        {[
+                            { id: 'new-booking', label: 'New Booking', icon: 'fa-calendar-plus', action: () => navigate('/reservation') },
+                            { id: 'my-reservations', label: 'My Reservations', icon: 'fa-calendar-check' },
+                            { id: 'user-pending-approvals', label: 'Pending My Bookings', icon: 'fa-clock' },
+                            { id: 'past-bookings', label: 'Past Bookings', icon: 'fa-history' }
+                        ].map(item => (
+                            <div key={item.id}
+                                className={`nav-item p-3 px-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition ${activeTab === item.id ? 'active bg-white/10 text-yellow-400 border-l-4 border-yellow-400 font-bold' : ''}`}
+                                onClick={() => item.action ? item.action() : setActiveTab(item.id)}>
+                                <i className={`fas ${item.icon} text-base w-6 text-center`}></i>
+                                <div className="flex-1 text-sm font-medium">{item.label}</div>
+                            </div>
+                        ))}
+                    </div>
 
                     <div
                         className="nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition"
@@ -120,20 +138,9 @@ const ManagementAssistantDashboard = () => {
                         </div>
                     </div>
 
-                    <div
-                        className="nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition"
-                        onClick={() => navigate('/reports')}
-                    >
-                        <i className="fas fa-chart-bar text-lg w-6 text-center"></i>
-                        <div className="flex-1">
-                            <div className="font-medium">Reports & Analytics</div>
-                            <div className="text-xs text-gray-400">System analytics</div>
-                        </div>
-                    </div>
                 </nav>
 
-                {/* Fixed Logout Button */}
-                <div className="fixed bottom-0 left-0 w-80 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                <div className="p-4 bg-gradient-to-t from-black/20 to-transparent shrink-0">
                     <button onClick={logout} className="w-full p-3 bg-white/10 hover:bg-white/20 rounded-lg transition duration-200 text-white flex items-center justify-center border border-white/10">
                         <i className="fas fa-sign-out-alt mr-2"></i>Logout
                     </button>
@@ -171,11 +178,11 @@ const ManagementAssistantDashboard = () => {
                 <div className="flex justify-between items-center mb-8">
                     <div>
                         <h1 className="text-3xl font-bold mb-2">
-                            {activeSection === 'dashboard' ? `Good Morning, ${user.name} 👋` :
-                                activeSection.charAt(0).toUpperCase() + activeSection.slice(1).replace('-', ' ')}
+                            {activeTab === 'dashboard' ? `Good Morning, ${user.name} 👋` :
+                                activeTab.charAt(0).toUpperCase() + activeTab.slice(1).replace('-', ' ')}
                         </h1>
                         <p className="text-gray-400">
-                            {activeSection === 'dashboard' ? 'Welcome to your management dashboard view' : 'Manage system information'}
+                            {activeTab === 'dashboard' ? 'Welcome to your management dashboard view' : 'Manage system information'}
                         </p>
                     </div>
                     <div className="flex items-center space-x-4">
@@ -191,7 +198,7 @@ const ManagementAssistantDashboard = () => {
                 </div>
 
                 {/* Dashboard View */}
-                {activeSection === 'dashboard' && (
+                {activeTab === 'dashboard' && (
                     <div className="animation-fade-in space-y-8">
                         {/* Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -221,7 +228,7 @@ const ManagementAssistantDashboard = () => {
                                     <h2 className="text-xl font-bold flex items-center gap-2">
                                         <i className="fas fa-check-circle text-green-500"></i> Recently Approved View
                                     </h2>
-                                    <button className="sar-btn sar-btn-primary" onClick={() => setActiveSection('approved-reservations')}>View All</button>
+                                    <button className="sar-btn sar-btn-primary" onClick={() => setActiveTab('approved-reservations')}>View All</button>
                                 </div>
                                 <div className="space-y-4">
                                     {approvedReservations.slice(0, 3).map((req) => (
@@ -268,7 +275,7 @@ const ManagementAssistantDashboard = () => {
                 )}
 
                 {/* Approved Reservations Module */}
-                {activeSection === 'approved-reservations' && (
+                {activeTab === 'approved-reservations' && (
                     <div className="animation-fade-in space-y-6">
                         <div className="sar-card-gradient p-6 rounded-xl">
                             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -280,6 +287,7 @@ const ManagementAssistantDashboard = () => {
                                         <tr className="border-b border-gray-200 text-gray-500 text-sm uppercase">
                                             <th className="px-4 py-3 font-semibold">Request Details</th>
                                             <th className="px-4 py-3 font-semibold">Route & Vehicle</th>
+                                            <th className="px-4 py-3 font-semibold">Driver Details</th>
                                             <th className="px-4 py-3 font-semibold">Date & Time</th>
                                             <th className="px-4 py-3 font-semibold text-right">Status</th>
                                         </tr>
@@ -300,7 +308,17 @@ const ManagementAssistantDashboard = () => {
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <p className="text-slate-800 font-medium"><i className="fas fa-map-marker-alt text-slate-400 mr-1"></i> {req.destination}</p>
-                                                    <p className="text-xs text-gray-500 mt-1">{req.model || 'Vehicle Pending'} • {req.passengers_count} Pax</p>
+                                                    <p className="text-xs text-gray-500 mt-1">{req.model || 'Vehicle Pending'} {req.registration_number ? `(${req.registration_number})` : ''}</p>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    {req.driver_first_name ? (
+                                                        <>
+                                                            <p className="font-medium text-slate-800">{req.driver_first_name} {req.driver_last_name}</p>
+                                                            <p className="text-xs text-slate-500 mt-1"><i className="fas fa-phone mr-1"></i> {req.driver_phone}</p>
+                                                        </>
+                                                    ) : (
+                                                        <p className="text-sm text-yellow-600"><i className="fas fa-clock mr-1"></i> Pending Assignment</p>
+                                                    )}
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <p className="text-slate-800">{new Date(req.start_datetime).toLocaleDateString()}</p>
@@ -315,7 +333,7 @@ const ManagementAssistantDashboard = () => {
                                         ))}
                                         {approvedReservations.length === 0 && (
                                             <tr>
-                                                <td colSpan="4" className="text-center py-10 text-gray-400">No approved reservations found.</td>
+                                                <td colSpan="5" className="text-center py-10 text-gray-400">No approved reservations found.</td>
                                             </tr>
                                         )}
                                     </tbody>

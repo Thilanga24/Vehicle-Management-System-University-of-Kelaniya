@@ -34,6 +34,7 @@ const App = () => {
     const [fpCode, setFpCode] = useState('');
     const [fpNewPassword, setFpNewPassword] = useState('');
     const [fpConfirmPassword, setFpConfirmPassword] = useState('');
+    const [loginAlert, setLoginAlert] = useState({ show: false, type: '', message: '' });
 
     // --- Constants ---
     // --- Constants ---
@@ -95,23 +96,23 @@ const App = () => {
 
                 redirectToDashboard(data.user.role);
             } else {
-                alert(data.message || 'Login failed');
+                setLoginAlert({ show: true, type: 'error', message: data.message || 'Invalid email or password' });
             }
         } catch (error) {
             console.error('Login Error:', error);
-            alert('Cannot connect to server. Ensure backend is running.');
+            setLoginAlert({ show: true, type: 'error', message: 'Unable to connect to the server. Please check your connection.' });
         } finally {
             setIsLoggingIn(false);
         }
     };
 
     const handleSendCode = async () => {
-        alert("Password reset is currently disabled. Please contact the system administrator.");
+        setLoginAlert({ show: true, type: 'error', message: 'Password reset is currently disabled. Please contact the system administrator.' });
         setShowForgotModal(false);
     };
 
     const handleResetPassword = async () => {
-        alert("Password reset is currently disabled.");
+        setLoginAlert({ show: true, type: 'error', message: 'Password reset is currently disabled.' });
     };
 
     return (
@@ -183,6 +184,31 @@ const App = () => {
 
                 <div className="w-full max-w-md relative z-10">
                     <div className="login-card rounded-2xl card-shadow p-8 border border-[#F6DD26]/20 bg-[#1e293b]/90 backdrop-blur">
+                        <AnimatePresence>
+                            {loginAlert.show && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className={`mb-6 p-4 rounded-lg flex items-center justify-between ${loginAlert.type === 'success' ? 'bg-green-900/40 text-green-200 border border-green-800/50' : 'bg-red-900/40 text-red-100 border border-red-800/50'} backdrop-blur-sm`}
+                                >
+                                    <div className="flex items-center">
+                                        <FontAwesomeIcon
+                                            icon={loginAlert.type === 'success' ? faInfoCircle : faInfoCircle}
+                                            className={`mr-3 ${loginAlert.type === 'success' ? 'text-green-400' : 'text-red-400'}`}
+                                        />
+                                        <span className="text-sm font-medium">{loginAlert.message}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setLoginAlert({ ...loginAlert, show: false })}
+                                        className="ml-4 text-white/60 hover:text-white transition-colors"
+                                    >
+                                        <FontAwesomeIcon icon={faTimes} />
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
                         <div className="text-center mb-6">
                             <h2 className="text-2xl font-bold !text-white" style={{ color: 'white' }}>Sign In</h2>
                             <p className="text-gray-300 mt-2">Sign in to your account</p>
