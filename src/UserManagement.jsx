@@ -96,7 +96,17 @@ const UserManagement = () => {
 
                 <div className="menu-section">
                     <div className="menu-section-title">Navigation</div>
-                    <div className="menu-item" onClick={() => navigate('/dashboard')}>
+                    <div className="menu-item" onClick={() => {
+                        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                        const role = user.role;
+                        if (role === 'registrar') navigate('/registrar-dashboard');
+                        else if (role === 'sar') navigate('/sar-dashboard');
+                        else if (role === 'hod') navigate('/hod-dashboard');
+                        else if (role === 'dean') navigate('/dean-dashboard');
+                        else if (role === 'admin') navigate('/admin-dashboard');
+                        else if (role === 'management_assistant') navigate('/management-dashboard');
+                        else navigate('/dashboard');
+                    }}>
                         <i className="fas fa-arrow-left"></i>
                         <span>Back to Dashboard</span>
                     </div>

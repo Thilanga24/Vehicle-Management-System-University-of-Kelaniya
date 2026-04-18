@@ -1,82 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './RegistrarDashboard.css'; // Uses the new University Theme CSS
+import { Line, Doughnut, Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, registerables } from 'chart.js';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import './SARDashboard.css';
+import SettingsTab from './SettingsTab';
 
-// --- Mock Data ---
-const MOCK_FLEET = [
-    { id: 'CAR-001', model: 'Toyota Corolla 2020', status: 'available', mileage: '45,230 km', nextService: '2024-02-15' },
-    { id: 'VAN-002', model: 'Toyota Hiace 2019', status: 'in-use', mileage: '67,890 km', nextService: '2024-01-28' },
-    { id: 'BUS-003', model: 'Mitsubishi Rosa 2021', status: 'available', mileage: '23,450 km', nextService: '2024-03-10' },
-    { id: 'VAN-004', model: 'Nissan Caravan 2018', status: 'maintenance', mileage: '89,230 km', nextService: 'In Progress' }
-];
-
-const MOCK_DRIVERS = [
-    { name: 'Sunil Bandara', license: 'B-7854321', status: 'active', rating: '4.8', trips: 234 },
-    { name: 'Kamal Fernando', license: 'B-9876543', status: 'active', rating: '4.9', trips: 187 },
-    { name: 'Nimal Perera', license: 'B-5432167', status: 'on-leave', rating: '4.7', trips: 156 },
-    { name: 'Gamini Silva', license: 'B-8765432', status: 'active', rating: '4.6', trips: 298 }
-];
-
-const MOCK_MAINTENANCE = [
-    { vehicle: 'CAR-001', service: 'Regular Service', date: '2024-01-20', status: 'scheduled' },
-    { vehicle: 'VAN-002', service: 'Oil Change', date: '2024-01-22', status: 'overdue' },
-    { vehicle: 'BUS-003', service: 'Tire Replacement', date: '2024-01-25', status: 'scheduled' },
-    { vehicle: 'VAN-004', service: 'Engine Repair', date: '2024-01-18', status: 'in-progress' }
-];
-
-const MOCK_PENDING_REQUESTS = [
-    {
-        id: 'REQ-2024-001',
-        department: 'Engineering Faculty',
-        purpose: 'Student Field Trip - Mahaweli Project Site',
-        date: '2024-01-15',
-        time: '08:00 AM',
-        passengers: 45,
-        distance: '120 km',
-        duration: '1 day',
-        priority: 'High',
-        submittedBy: 'Prof. Kamal Perera'
-    },
-    {
-        id: 'REQ-2024-002',
-        department: 'Medical Faculty',
-        purpose: 'Hospital Visit - Teaching Hospital Kandy',
-        date: '2024-01-16',
-        time: '09:30 AM',
-        passengers: 25,
-        distance: '45 km',
-        duration: '4 hours',
-        priority: 'Medium',
-        submittedBy: 'Dr. Nimal Silva'
-    },
-    {
-        id: 'REQ-2024-003',
-        department: 'Agriculture Faculty',
-        purpose: 'Research Site Visit - Peradeniya Botanical Garden',
-        date: '2024-01-18',
-        time: '07:00 AM',
-        passengers: 30,
-        distance: '15 km',
-        duration: '6 hours',
-        priority: 'Medium',
-        submittedBy: 'Prof. Sunila Jayawardena'
-    }
-];
+ChartJS.register(...registerables);
 
 const RegistrarDashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
+    const [settingsSubTab, setSettingsSubTab] = useState('security');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [user, setUser] = useState(JSON.parse(localStorage.getItem('currentUser') || '{"name": "Registrar", "role": "registrar"}'));
-    const [searchQuery, setSearchQuery] = useState('');
 
-    // Data States
-    const [fleetData, setFleetData] = useState(MOCK_FLEET);
-    const [driverData, setDriverData] = useState(MOCK_DRIVERS);
-    const [maintenanceData, setMaintenanceData] = useState(MOCK_MAINTENANCE);
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [editProfileForm, setEditProfileForm] = useState({
+        name: user?.name || '',
+        department: user?.department || user?.faculty || '',
+        profilePic: user?.profilePic || ''
+    });
+
+    const handleProfileUpdate = (e) => {
+        e.preventDefault();
+        const updatedUser = { ...user, ...editProfileForm };
+        setUser(updatedUser);
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        setShowProfileModal(false);
+        if (typeof showNotification === 'function') {
+            showNotification('Profile updated successfully!', 'success');
+        }
+    };
+
+    const handleProfilePicChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setEditProfileForm({ ...editProfileForm, profilePic: reader.result });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
 
     const [reservations, setReservations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info' });
+    const [searchQuery, setSearchQuery] = useState('');
 
     const showNotification = (message, type = 'info') => {
         setNotification({ show: true, message, type });
@@ -122,17 +95,59 @@ const RegistrarDashboard = () => {
             submittedBy: `${r.first_name || ''} ${r.last_name || 'Staff'}`
         }));
 
+    // Personal Bookings for the Registrar
+    const myPendingBookings = Array.isArray(reservations) ? reservations.filter(r =>
+        String(r.requester_id) === String(user.id) &&
+        (r.status === 'pending' || r.status.startsWith('pending_'))
+    ) : [];
+
+    const myPastBookings = Array.isArray(reservations) ? reservations.filter(r =>
+        String(r.requester_id) === String(user.id) &&
+        (r.status === 'completed' || r.status === 'rejected' || r.status === 'cancelled')
+    ) : [];
+
+    const myActiveBookings = Array.isArray(reservations) ? reservations.filter(r =>
+        String(r.requester_id) === String(user.id) &&
+        r.status === 'approved'
+    ) : [];
+
     // Modal State
     const [modal, setModal] = useState({ show: false, type: '', data: null });
     const [approvalComment, setApprovalComment] = useState('');
 
-    // --- Effects ---
-    useEffect(() => {
-        const storedUser = sessionStorage.getItem('userName');
-        if (storedUser) {
-            setUser(prev => ({ ...prev, name: storedUser }));
+    const openReviewModal = (request) => {
+        setModal({ show: true, type: 'review', data: request });
+        setApprovalComment('');
+    };
+
+    const handleModalClose = () => {
+        setModal({ show: false, type: '', data: null });
+    };
+
+    const handleAction = async (action) => {
+        try {
+            const status = action === 'approve' ? 'approved' : 'rejected';
+            const response = await fetch(`http://localhost:5000/api/reservations/registrar/${modal.data.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: status,
+                    comments: approvalComment,
+                    processed_by: user.id
+                })
+            });
+
+            if (response.ok) {
+                showNotification(`Request REQ-${modal.data.id} ${status} successfully`, 'success');
+                fetchReservations();
+                handleModalClose();
+            } else {
+                throw new Error('Action failed');
+            }
+        } catch (error) {
+            showNotification('Error processing request', 'error');
         }
-    }, []);
+    };
 
     const logout = () => {
         sessionStorage.clear();
@@ -140,175 +155,183 @@ const RegistrarDashboard = () => {
         navigate('/login');
     };
 
-    // --- Helper Functions ---
-    const handleModalClose = () => {
-        setModal({ show: false, type: '', data: null });
-        setApprovalComment('');
-    };
+    const renderOverview = () => {
+        const approvedReservations = reservations.filter(r => r.status === 'approved');
+        const fleetUsageData = {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Fleet Utilization',
+                data: [65, 59, 80, 81, 56, 40, 30],
+                backgroundColor: 'rgba(128, 0, 0, 0.7)',
+                borderRadius: 5,
+            }]
+        };
 
-    const handleAction = async (action) => {
-        if (!modal.data) return;
-        const id = modal.data.id;
+        const statusDistributionData = {
+            labels: ['Approved', 'Pending', 'In Maintenance', 'Rejected'],
+            datasets: [{
+                data: [
+                    reservations.filter(r => r.status === 'approved').length,
+                    reservations.filter(r => r.status.startsWith('pending')).length,
+                    4,
+                    reservations.filter(r => r.status === 'rejected').length
+                ],
+                backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444'],
+                borderWidth: 0,
+            }]
+        };
 
-        try {
-            const apiStatus = action === 'reject' ? 'rejected' : 'approved';
-            const response = await fetch(`http://localhost:5000/api/reservations/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    status: apiStatus,
-                    level: 'registrar',
-                    comments: approvalComment
-                })
-            });
+        return (
+            <div className="animation-fade-in space-y-8">
+                {/* Stats Summary */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                                <i className="fas fa-car-side text-lg"></i>
+                            </div>
+                            <span className="text-xs font-black text-emerald-500 uppercase">+12%</span>
+                        </div>
+                        <p className="text-sm font-medium text-slate-500 mb-1">Total Fleet Size</p>
+                        <h3 className="text-2xl font-black text-slate-800 tracking-tight">24 Units</h3>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center text-amber-600">
+                                <i className="fas fa-clock text-lg"></i>
+                            </div>
+                            <span className="text-xs font-black text-amber-500 uppercase">Awaited</span>
+                        </div>
+                        <p className="text-sm font-medium text-slate-500 mb-1">Pending Approvals</p>
+                        <h3 className="text-2xl font-black text-slate-800 tracking-tight">{pendingRequests.length} Requests</h3>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
+                                <i className="fas fa-check-double text-lg"></i>
+                            </div>
+                            <span className="text-xs font-black text-emerald-500 uppercase">Daily</span>
+                        </div>
+                        <p className="text-sm font-medium text-slate-500 mb-1">Approved Trips</p>
+                        <h3 className="text-2xl font-black text-slate-800 tracking-tight">{approvedReservations.length} Active</h3>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="w-10 h-10 bg-[#800000]/5 rounded-lg flex items-center justify-center text-[#800000]">
+                                <i className="fas fa-gas-pump text-lg"></i>
+                            </div>
+                            <span className="text-xs font-black text-red-500 uppercase">-4%</span>
+                        </div>
+                        <p className="text-sm font-medium text-slate-500 mb-1">Fuel Consumption</p>
+                        <h3 className="text-2xl font-black text-slate-800 tracking-tight">Rs. 248K</h3>
+                    </div>
+                </div>
 
-            if (response.ok) {
-                showNotification(`Request #${id} ${action === 'approve' ? 'Approved' : 'Rejected'} Successfully.`, 'success');
-                fetchReservations();
-            } else {
-                showNotification('Failed to update status', 'error');
-            }
-        } catch (error) {
-            console.error('Registrar Action Error:', error);
-            showNotification('Error processing request', 'error');
-        }
-        handleModalClose();
-    };
-
-    const openReviewModal = (req) => {
-        setModal({ show: true, type: 'review', data: req });
-    };
-
-    // --- Render Components ---
-    const renderOverview = () => (
-        <div className="animation-fade-in space-y-8">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="stat-card">
-                    <div className="flex items-center justify-between mb-2 w-full">
-                        <div className="bg-yellow-100 p-3 rounded-lg"><i className="fas fa-exclamation-triangle text-yellow-600 text-xl"></i></div>
-                        <div className="text-right">
-                            <p className="text-2xl font-bold text-slate-800">{pendingRequests.length}</p>
-                            <p className="text-xs text-slate-500">requests</p>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <i className="fas fa-chart-bar text-blue-500"></i> Weekly Fleet Utilization
+                            </h3>
+                        </div>
+                        <div className="h-64">
+                            <Bar data={fleetUsageData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
                         </div>
                     </div>
-                    <h3 className="text-sm font-medium text-slate-500">Pending Approvals</h3>
-                </div>
-                <div className="stat-card">
-                    <div className="flex items-center justify-between mb-2 w-full">
-                        <div className="bg-indigo-100 p-3 rounded-lg"><i className="fas fa-car text-indigo-600 text-xl"></i></div>
-                        <div className="text-right">
-                            <p className="text-2xl font-bold text-slate-800">{fleetData.length}</p>
-                            <p className="text-xs text-slate-500">vehicles</p>
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-800 mb-6">Status Overview</h3>
+                        <div className="h-64 flex justify-center">
+                            <Doughnut data={statusDistributionData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
                         </div>
                     </div>
-                    <h3 className="text-sm font-medium text-slate-500">Total Fleet</h3>
                 </div>
-                <div className="stat-card">
-                    <div className="flex items-center justify-between mb-2 w-full">
-                        <div className="bg-green-100 p-3 rounded-lg"><i className="fas fa-check-circle text-green-600 text-xl"></i></div>
-                        <div className="text-right">
-                            <p className="text-2xl font-bold text-slate-800">89</p>
-                            <p className="text-xs text-slate-500 text-green-600">+15%</p>
-                        </div>
-                    </div>
-                    <h3 className="text-sm font-medium text-slate-500">Processed Trips</h3>
-                </div>
-                <div className="stat-card">
-                    <div className="flex items-center justify-between mb-2 w-full">
-                        <div className="bg-blue-100 p-3 rounded-lg"><i className="fas fa-coins text-blue-600 text-xl"></i></div>
-                        <div className="text-right">
-                            <p className="text-2xl font-bold text-slate-800">8.2M</p>
-                            <p className="text-xs text-slate-500">LKR</p>
-                        </div>
-                    </div>
-                    <h3 className="text-sm font-medium text-slate-500">Annual Budget</h3>
-                </div>
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Executive Approvals Queue */}
-                <div className="card-gradient p-6 rounded-xl">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                            <i className="fas fa-university text-yellow-600"></i> Executive Approvals
-                        </h2>
-                        <button className="btn-primary text-sm px-4 py-2" onClick={() => setActiveTab('longdistance')}>View All</button>
-                    </div>
+                {/* Quick Actions / Recent Log */}
+                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <i className="fas fa-history text-slate-400"></i> Recent Global Activity
+                    </h3>
                     <div className="space-y-4">
-                        {pendingRequests.slice(0, 2).map((req) => (
-                            <div key={req.id} className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                                <div className="flex justify-between items-start mb-3">
+                        {reservations.slice(0, 5).map(req => (
+                            <div key={req.reservation_id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-2 h-10 rounded-full ${req.status === 'approved' ? 'bg-emerald-500' : req.status === 'rejected' ? 'bg-red-500' : 'bg-amber-500'}`}></div>
                                     <div>
-                                        <h3 className="font-medium text-slate-800">{req.purpose}</h3>
-                                        <p className="text-sm text-slate-500">{req.department} • {req.distance}</p>
-                                        <p className="text-xs text-slate-400 mt-1">Submitted: {req.date}</p>
+                                        <p className="font-bold text-slate-800">REQ-{req.reservation_id}: {req.destination}</p>
+                                        <p className="text-xs text-slate-500">{req.first_name} {req.last_name} • {new Date(req.start_datetime).toLocaleDateString()}</p>
                                     </div>
-                                    <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full font-medium border border-yellow-200">Registrar Decision</span>
                                 </div>
-                                <div className="bg-indigo-50 p-2 rounded text-xs mb-3 text-indigo-700 border border-indigo-100">
-                                    <p><i className="fas fa-info-circle mr-1"></i> <strong>Distance &gt; 100km:</strong> Requires executive approval.</p>
-                                </div>
-                                <button onClick={() => openReviewModal(req)} className="w-full btn-primary py-2 text-sm">
-                                    Review Request
-                                </button>
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm border ${req.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : req.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                    {req.status}
+                                </span>
                             </div>
                         ))}
-                        {pendingRequests.length === 0 && <p className="text-center text-slate-400 py-4">No pending requests.</p>}
-                    </div>
-                </div>
-
-                {/* Fleet Analytics */}
-                <div className="card-gradient p-6 rounded-xl">
-                    <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                        <i className="fas fa-chart-pie text-blue-600"></i> Fleet Performance
-                    </h2>
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                            <div><p className="text-sm font-medium text-slate-700">Fuel Expenses</p><p className="text-xs text-slate-500">Oct 2025</p></div>
-                            <div className="text-right"><p className="text-lg font-bold text-red-500">LKR 2,45,000</p><p className="text-xs text-slate-400">↑ 8% from Sept</p></div>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                            <div><p className="text-sm font-medium text-slate-700">Maintenance</p><p className="text-xs text-slate-500">Oct 2025</p></div>
-                            <div className="text-right"><p className="text-lg font-bold text-yellow-500">LKR 95,000</p><p className="text-xs text-slate-400">↓ 12% from Sept</p></div>
-                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     const renderFleet = () => (
-        <div className="animation-fade-in grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 card-gradient p-6 rounded-xl">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-slate-800">University Fleet Status</h2>
-                    <button onClick={() => setModal({ show: true, type: 'addVehicle' })} className="btn-primary text-sm">Add Vehicle</button>
-                </div>
-                <div className="space-y-4">
-                    {fleetData.map(vehicle => (
-                        <div key={vehicle.id} className="bg-white p-4 rounded-lg flex justify-between items-center border border-slate-200 hover:shadow-sm transition">
-                            <div>
-                                <h3 className="font-semibold text-slate-800">{vehicle.id}</h3>
-                                <p className="text-sm text-slate-500">{vehicle.model}</p>
-                                <p className="text-xs text-slate-400 mt-1">Next Service: {vehicle.nextService}</p>
-                            </div>
-                            <div className="text-right">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${vehicle.status === 'available' ? 'bg-green-100 text-green-700' : vehicle.status === 'in-use' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                    {vehicle.status}
-                                </span>
-                                <div className="text-xs text-slate-400 mt-1">Mileage: {vehicle.mileage}</div>
-                            </div>
-                        </div>
-                    ))}
+        <div className="animation-fade-in space-y-6">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-800">Vehicle Fleet Register</h2>
+                <div className="flex gap-4">
+                    <button onClick={() => setModal({ show: true, type: 'addVehicle' })} className="btn-primary px-4 py-2 flex items-center gap-2 shadow-lg shadow-red-800/20">
+                        <i className="fas fa-plus"></i> Add Vehicle
+                    </button>
+                    <button className="bg-white border border-slate-200 px-4 py-2 rounded-lg text-slate-600 font-bold hover:bg-slate-50 flex items-center gap-2 transition shadow-sm">
+                        <i className="fas fa-file-excel"></i> Export CSV
+                    </button>
                 </div>
             </div>
-            <div className="card-gradient p-6 rounded-xl h-fit">
-                <h3 className="text-lg font-semibold text-slate-800 mb-4">Fleet Overview</h3>
-                <div className="space-y-3">
-                    <div className="flex justify-between"><span className="text-slate-500">Total Vehicles</span><span className="font-bold text-slate-800">{fleetData.length}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Available</span><span className="text-green-600 font-bold">{fleetData.filter(v => v.status === 'available').length}</span></div>
-                </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[
+                    { count: 18, label: 'Available Now', color: 'emerald', icon: 'fa-check' },
+                    { count: 4, label: 'Currently Dispatched', color: 'blue', icon: 'fa-map-marker-alt' },
+                    { count: 2, label: 'Under Maintenance', color: 'amber', icon: 'fa-tools' }
+                ].map((s, i) => (
+                    <div key={i} className={`bg-white p-6 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-${s.color}-500`}>
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-2xl font-black text-slate-800">{s.count}</span>
+                            <i className={`fas ${s.icon} text-${s.color}-500 opacity-20 text-2xl`}></i>
+                        </div>
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest leading-tight">{s.label}</p>
+                    </div>
+                ))}
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <table className="w-full text-left">
+                    <thead className="bg-[#800000] text-white uppercase font-semibold text-xs">
+                        <tr>
+                            <th className="px-6 py-4">Ref#</th>
+                            <th className="px-6 py-4">Registration</th>
+                            <th className="px-6 py-4">Make & Model</th>
+                            <th className="px-6 py-4">Fleet Assignment</th>
+                            <th className="px-6 py-4 text-right">Operational Status</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-sm">
+                        {[
+                            { id: 'VH-01', reg: 'CP KH-4521', model: 'Toyota Hiace (High Roof)', type: 'Transport Div' },
+                            { id: 'VH-02', reg: 'WP CAV-8952', model: 'Nissan Leaf (Electric)', type: 'Faculty of Science' },
+                            { id: 'VH-03', reg: 'CP PD-4421', model: 'Isuzu NPR Truck', type: 'General Admin' },
+                            { id: 'VH-04', reg: 'NW KI-1123', model: 'Toyota Land Cruiser', type: 'Executive Vice Chancellor' },
+                        ].map((v, i) => (
+                            <tr key={i} className="hover:bg-slate-50 transition border-b border-gray-50">
+                                <td className="px-6 py-4 font-black text-slate-400">{v.id}</td>
+                                <td className="px-6 py-4 font-bold text-slate-800">{v.reg}</td>
+                                <td className="px-6 py-4 font-medium text-slate-600">{v.model}</td>
+                                <td className="px-6 py-4 text-slate-500 font-bold">{v.type}</td>
+                                <td className="px-6 py-4 text-right">
+                                    <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase">Service Active</span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
@@ -357,95 +380,137 @@ const RegistrarDashboard = () => {
     return (
         <div className="registrar-dashboard-container">
             {/* Sidebar */}
-            <div className={`sidebar bg-gradient-to-b from-[#1a0505] to-[#2d0a0a] border-none w-80 fixed h-full z-40 transition-transform duration-300 flex flex-col`}>
+            {/* Sidebar */}
+            <div className={`sidebar bg-[#1a0505] w-80 fixed h-full z-40 transition-transform duration-300 flex flex-col border-r border-[#F6DD26]/20 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                 <div className="p-6 border-b border-white/10 shrink-0">
-                    <h1 className="text-2xl font-bold text-white mb-2">Registrar Portal</h1>
-                    <p className="text-sm text-gray-400">Executive Administration</p>
+                    <div className="flex flex-col items-center mb-4">
+                        <img src="/assets/banner.png" alt="University of Kelaniya" className="w-44 h-auto object-contain mb-4" />
+                        <div className="text-center">
+                            <h1 className="text-2xl font-bold text-white mb-1">Registrar Portal</h1>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-none mt-1">Executive Administration</p>
+                        </div>
+                    </div>
                 </div>
 
-                <nav className="p-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar">
-                    {[
-                        { id: 'overview', label: 'Dashboard', sub: 'Overview & Metrics', icon: 'fa-tachometer-alt' },
-                        { id: 'longdistance', label: 'Approvals', sub: 'Trip Requests', icon: 'fa-file-signature' },
-                        { id: 'approved-reservations', label: 'Approved Today', sub: 'Confirmed trips', icon: 'fa-check-double' },
-                    ].map(item => (
-                        <div key={item.id}
-                            className={`nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition ${activeTab === item.id ? 'active bg-white/10 text-yellow-400 border-l-4 border-yellow-400' : ''}`}
-                            onClick={() => setActiveTab(item.id)}>
-                            <i className={`fas ${item.icon} text-lg w-6 text-center`}></i>
-                            <div className="flex-1">
-                                <div className="font-medium">{item.label}</div>
-                                <div className="text-xs opacity-70">{item.sub}</div>
-                            </div>
-                            {item.id === 'longdistance' && pendingRequests.length > 0 && (
-                                <span className="bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">{pendingRequests.length}</span>
-                            )}
-                        </div>
-                    ))}
-
-                    <div className="pt-6 border-t border-white/5 mt-4 space-y-1">
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-4">My Personal Portal</p>
+                <nav className="p-4 space-y-1 flex-1 overflow-y-auto custom-scrollbar">
+                    <div className="menu-section">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-4">Executive Dashboard</p>
                         {[
-                            { id: 'new-booking', label: 'New Booking', icon: 'fa-calendar-plus', action: () => navigate('/reservation') },
-                            { id: 'my-reservations', label: 'My Reservations', icon: 'fa-calendar-check' },
-                            { id: 'past-bookings', label: 'Past Bookings', icon: 'fa-history' }
-                        ].map(item => (
-                            <div key={item.id}
-                                className={`nav-item p-3 px-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition ${activeTab === item.id ? 'active bg-white/10 text-yellow-400 border-l-4 border-yellow-400 font-bold' : ''}`}
+                            { id: 'overview', label: 'Overview Metrics', icon: 'fa-tachometer-alt' },
+                            { id: 'longdistance', label: 'Approval Queue', icon: 'fa-file-signature' },
+                            { id: 'approved-reservations', label: 'Approved Archive', icon: 'fa-check-double' },
+                            { label: 'Fleet Registry', icon: 'fa-car', action: () => navigate('/vehicles') },
+                            { label: 'Personnel Records', icon: 'fa-users-cog', action: () => navigate('/drivers') },
+                            { label: 'Maintenance Logs', icon: 'fa-tools', action: () => navigate('/maintenance') },
+                            { label: 'Analytics & BI', icon: 'fa-chart-line', action: () => navigate('/reports') },
+                        ].map((item, idx) => (
+                            <div key={item.id || idx}
+                                className={`menu-item p-4 cursor-pointer flex items-center space-x-3 rounded-xl transition-all duration-200 border-l-4 ${activeTab === item.id ? 'active bg-white/10 border-yellow-400 text-yellow-400 font-bold shadow-lg' : 'border-transparent text-gray-300 hover:bg-white/5 hover:text-white'}`}
                                 onClick={() => item.action ? item.action() : setActiveTab(item.id)}>
-                                <i className={`fas ${item.icon} text-sm w-6 text-center`}></i>
-                                <div className="flex-1 text-sm font-medium">{item.label}</div>
+                                <i className={`fas ${item.icon} text-lg w-6 text-center ${activeTab === item.id ? 'text-yellow-400' : 'text-gray-400'}`}></i>
+                                <span className="flex-1 text-sm font-medium">{item.label}</span>
+                                {item.id === 'longdistance' && pendingRequests.length > 0 && (
+                                    <span className="bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg">{pendingRequests.length}</span>
+                                )}
                             </div>
                         ))}
                     </div>
 
-                    <div
-                        className="nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition"
-                        onClick={() => navigate('/vehicles')}>
-                        <i className="fas fa-car text-lg w-6 text-center"></i>
-                        <div className="flex-1">
-                            <div className="font-medium">Vehicles</div>
-                            <div className="text-xs opacity-70">Vehicle Records</div>
-                        </div>
+                    <div className="pt-6 border-t border-white/10 mt-2 space-y-1">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-4">Your Reservations Portal</p>
+                        {[
+                            { id: 'new-booking', label: 'New Booking', icon: 'fa-calendar-plus', action: () => navigate('/reservation') },
+                            { id: 'my-reservations', label: 'My Reservations', icon: 'fa-calendar-check' },
+                            { id: 'user-pending-approvals', label: 'Pending My Bookings', icon: 'fa-clock' },
+                            { id: 'past-bookings', label: 'Activity Archive', icon: 'fa-history' }
+                        ].map(item => (
+                            <div key={item.id}
+                                className={`menu-item p-3 px-4 cursor-pointer flex items-center space-x-3 rounded-xl transition-all duration-200 border-l-4 ${activeTab === item.id ? 'active bg-white/10 border-yellow-400 text-yellow-400 font-bold shadow-lg' : 'border-transparent text-gray-300 hover:bg-white/5 hover:text-white'}`}
+                                onClick={() => item.action ? item.action() : setActiveTab(item.id)}>
+                                <i className={`fas ${item.icon} text-lg w-6 text-center ${activeTab === item.id ? 'text-yellow-400' : 'text-gray-400'}`}></i>
+                                <span className="flex-1 text-sm font-medium">{item.label}</span>
+                            </div>
+                        ))}
                     </div>
 
-                    <div
-                        className="nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition"
-                        onClick={() => navigate('/drivers')}>
-                        <i className="fas fa-users-cog text-lg w-6 text-center"></i>
-                        <div className="flex-1">
-                            <div className="font-medium">Drivers</div>
-                            <div className="text-xs opacity-70">Driver Profiles</div>
-                        </div>
-                    </div>
-
-                    <div
-                        className="nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition"
-                        onClick={() => navigate('/maintenance')}>
-                        <i className="fas fa-tools text-lg w-6 text-center"></i>
-                        <div className="flex-1">
-                            <div className="font-medium">Maintenance</div>
-                            <div className="text-xs opacity-70">Service Schedules</div>
-                        </div>
-                    </div>
-
-                    <div
-                        className="nav-item p-4 cursor-pointer flex items-center space-x-3 text-gray-300 hover:bg-white/5 rounded-xl transition"
-                        onClick={() => navigate('/reports')}>
-                        <i className="fas fa-chart-line text-lg w-6 text-center"></i>
-                        <div className="flex-1">
-                            <div className="font-medium">Reports</div>
-                            <div className="text-xs opacity-70">Analytics</div>
-                        </div>
+                    <div className={`menu-item p-4 cursor-pointer flex items-center space-x-3 rounded-xl transition-all duration-200 border-l-4 mt-2 ${activeTab === 'settings' ? 'active bg-white/10 border-yellow-400 text-yellow-400 font-bold shadow-lg' : 'border-transparent text-gray-300 hover:bg-white/5 hover:text-white'}`} onClick={() => setActiveTab('settings')}>
+                        <i className={`fas fa-cog text-lg w-6 text-center ${activeTab === 'settings' ? 'text-yellow-400' : 'text-gray-400'}`}></i>
+                        <span className="flex-1 text-sm font-medium">System Settings</span>
                     </div>
                 </nav>
 
-                <div className="p-4 bg-gradient-to-t from-black/20 to-transparent shrink-0">
-                    <button onClick={logout} className="w-full p-3 bg-white/10 hover:bg-white/20 rounded-lg transition duration-200 text-white flex items-center justify-center border border-white/10">
+                <div className="p-4 bg-black/10 border-t border-white/5 shrink-0">
+                    <button onClick={logout} className="w-full p-3 bg-white/5 hover:bg-white/10 rounded-lg transition duration-200 text-white flex items-center justify-center border border-white/10 font-bold">
                         <i className="fas fa-sign-out-alt mr-2"></i>Logout
                     </button>
                 </div>
             </div>
+
+
+            {/* Profile Modal */}
+            {showProfileModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black bg-opacity-50 transition-opacity">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in relative block text-left">
+                        <div className="p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-2xl font-bold text-slate-800">Edit Profile</h2>
+                                <button onClick={() => setShowProfileModal(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                                    <i className="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                            <form onSubmit={handleProfileUpdate} className="space-y-4">
+                                <div className="flex flex-col items-center mb-6">
+                                    <div className="w-24 h-24 rounded-full bg-slate-200 overflow-hidden mb-3 relative group border-4 border-white shadow-lg">
+                                        {editProfileForm.profilePic ? (
+                                            <img src={editProfileForm.profilePic} alt="Preview" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-slate-400">
+                                                {editProfileForm.name ? editProfileForm.name.charAt(0).toUpperCase() : '?'}
+                                            </div>
+                                        )}
+                                        <label className="absolute inset-0 bg-black bg-opacity-50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                                            <i className="fas fa-camera text-xl"></i>
+                                            <input type="file" className="hidden" accept="image/*" onChange={handleProfilePicChange} />
+                                        </label>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <p className="text-sm text-slate-500 mb-1">Click image to upload new profile picture</p>
+                                        {editProfileForm.profilePic && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditProfileForm({ ...editProfileForm, profilePic: '' })}
+                                                className="text-xs font-semibold text-red-600 hover:text-red-800 transition-colors flex items-center gap-1"
+                                            >
+                                                <i className="fas fa-trash-alt"></i> Remove Photo
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Full Name</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                        value={editProfileForm.name}
+                                        onChange={(e) => setEditProfileForm({ ...editProfileForm, name: e.target.value })}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="pt-4 flex justify-end gap-3">
+                                    <button type="button" onClick={() => setShowProfileModal(false)} className="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="px-5 py-2.5 rounded-lg bg-[#660000] border border-[#F6DD26] text-white font-medium hover:bg-[#800000] transition-colors shadow-md">
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Main Content */}
             <div className="flex-1 lg:ml-80 flex flex-col min-h-screen bg-slate-50 text-slate-800 relative">
@@ -492,13 +557,23 @@ const RegistrarDashboard = () => {
                                     className="bg-white border border-slate-200 rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:border-red-800 text-slate-700 w-64 shadow-sm" />
                                 <i className="fas fa-search absolute right-3 top-3 text-slate-400 text-xs"></i>
                             </div>
-                            <div className="relative cursor-pointer">
-                                <div className="bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-700 transition shadow-md">
-                                    <span className="text-xs font-bold">{pendingRequests.length}</span>
+
+                            <div className="flex items-center gap-2 cursor-pointer hover:bg-slate-200 p-1 pr-4 rounded-full transition-colors" onClick={() => {
+                                setEditProfileForm({
+                                    name: user?.name || '',
+                                    department: '',
+                                    profilePic: user?.profilePic || ''
+                                });
+                                setShowProfileModal(true);
+                            }}>
+                                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-full flex items-center justify-center shadow-lg transform hover:scale-105 transition overflow-hidden shrink-0">
+                                    {user?.profilePic ? (
+                                        <img src={user.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-sm font-bold text-white">{user?.name ? user.name.charAt(0).toUpperCase() : 'U'}</span>
+                                    )}
                                 </div>
-                            </div>
-                            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-full flex items-center justify-center shadow-lg cursor-pointer transform hover:scale-105 transition">
-                                <span className="text-sm font-bold text-white">{user.name.charAt(0)}</span>
+                                <span className="text-sm font-bold text-slate-700 hidden md:block">{user?.name}</span>
                             </div>
                         </div>
                     </div>
@@ -539,88 +614,142 @@ const RegistrarDashboard = () => {
                         </div>
                     )}
 
+                    {/* My Reservations Section */}
                     {activeTab === 'my-reservations' && (
                         <div className="animation-fade-in space-y-6">
-                            <div className="card-gradient p-6 rounded-xl">
-                                <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-slate-800">
-                                    <i className="fas fa-calendar-check text-blue-600"></i> My Personal Trips
-                                </h2>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-sm border-collapse">
-                                        <thead className="bg-slate-50 text-slate-500 uppercase font-semibold">
-                                            <tr>
-                                                <th className="px-6 py-4 font-bold">Target Location</th>
-                                                <th className="px-6 py-4 font-bold">Planned Timing</th>
-                                                <th className="px-6 py-4 font-bold text-right">Current Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {reservations.filter(r => String(r.requester_id) === String(user.id) && r.status !== 'completed' && r.status !== 'rejected').map(req => (
-                                                <tr key={req.reservation_id} className="hover:bg-slate-50 transition border-b border-gray-100">
-                                                    <td className="px-6 py-4 font-bold text-slate-800">{req.destination}</td>
-                                                    <td className="px-6 py-4 text-slate-600 font-medium">{new Date(req.start_datetime).toLocaleDateString()} at {new Date(req.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${req.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                            {req.status === 'approved' ? 'CONFIRMED' : 'WAITING'}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            {reservations.filter(r => String(r.requester_id) === String(user.id) && r.status !== 'completed' && r.status !== 'rejected').length === 0 && (
-                                                <tr><td colSpan="3" className="px-6 py-10 text-center text-slate-400">You have no active personal reservations.</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
+                            <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-slate-800">My Reservations</h2>
+                                    <p className="text-sm text-slate-500">Upcoming approved trips for your personal faculty duties.</p>
                                 </div>
+                                <div className="h-12 w-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 border border-emerald-100">
+                                    <i className="fas fa-calendar-check text-xl"></i>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {myActiveBookings.map(req => (
+                                    <div key={req.reservation_id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+                                        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 text-white">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Ref: REQ-{req.reservation_id}</span>
+                                                <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-bold">APPROVED</span>
+                                            </div>
+                                            <h3 className="font-bold text-lg leading-tight mb-1">{req.destination}</h3>
+                                            <div className="text-xs text-white/80 flex items-center gap-2">
+                                                <i className="fas fa-clock"></i> {new Date(req.start_datetime).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                        <div className="p-5 space-y-4">
+                                            <div className="flex items-center gap-3">
+                                                <i className="fas fa-car-side text-slate-400"></i>
+                                                <span className="text-sm font-bold text-slate-700">{req.model || 'Processing Assignment...'}</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <i className="fas fa-user-tie text-slate-400"></i>
+                                                <span className="text-sm font-bold text-slate-700">{req.driver_name || 'TBA'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {myActiveBookings.length === 0 && (
+                                    <div className="col-span-full py-20 bg-white rounded-2xl border border-slate-200 text-center text-slate-400 italic">
+                                        No upcoming approved personal reservations found.
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
 
+                    {/* Pending My Bookings Section */}
+                    {activeTab === 'user-pending-approvals' && (
+                        <div className="animation-fade-in space-y-6">
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                                <h2 className="text-2xl font-bold text-slate-800 mb-6 font-inter">Pending My Bookings</h2>
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="bg-slate-50">
+                                        <tr>
+                                            <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-widest font-inter">Reference</th>
+                                            <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase font-inter tracking-widest font-inter">Destination</th>
+                                            <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase font-inter tracking-widest font-inter">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 italic">
+                                        {myPendingBookings.map(req => (
+                                            <tr key={req.reservation_id}>
+                                                <td className="px-6 py-4 font-bold text-slate-800">REQ-{req.reservation_id}</td>
+                                                <td className="px-6 py-4 text-slate-600 font-medium font-inter">{req.destination}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-black uppercase tracking-tighter border border-amber-100 italic font-inter tracking-widest">PENDING AUTH</span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {myPendingBookings.length === 0 && (
+                                            <tr><td colSpan="3" className="px-6 py-12 text-center text-slate-400 italic shadow-inner">No pending personal bookings.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Past Bookings Section */}
                     {activeTab === 'past-bookings' && (
                         <div className="animation-fade-in space-y-6">
-                            <div className="card-gradient p-6 rounded-xl">
-                                <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-slate-400">
-                                    <i className="fas fa-history"></i> Personal Travel History
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                                <h2 className="text-2xl font-bold text-slate-800 mb-6 font-display flex items-center gap-3 font-inter">
+                                    <i className="fas fa-history text-slate-400 font-inter"></i> My Trip History Archive
                                 </h2>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-sm">
-                                        <thead className="bg-[#1f2937] text-white uppercase font-black">
-                                            <tr>
-                                                <th className="px-6 py-4 tracking-tighter">Site Visited</th>
-                                                <th className="px-6 py-4 tracking-tighter">Date of Travel</th>
-                                                <th className="px-6 py-4 tracking-tighter text-right">Final Outcome</th>
+                                <table className="w-full text-left font-inter">
+                                    <thead className="bg-[#1f2937] text-white rounded-lg">
+                                        <tr>
+                                            <th className="px-6 py-4 text-xs font-black uppercase tracking-widest font-inter">Date</th>
+                                            <th className="px-6 py-4 text-xs font-black uppercase tracking-widest font-inter">Destination</th>
+                                            <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-right font-inter">Fulfillment</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 font-inter">
+                                        {myPastBookings.map(req => (
+                                            <tr key={req.reservation_id} className="hover:bg-slate-50 transition border-b border-gray-100 font-inter">
+                                                <td className="px-6 py-4 text-slate-600 font-black font-inter tracking-tighter">{new Date(req.start_datetime).toLocaleDateString()}</td>
+                                                <td className="px-6 py-4 font-bold text-slate-800 font-inter">{req.destination}</td>
+                                                <td className="px-6 py-4 text-right font-inter">
+                                                    <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${req.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                                                        {req.status === 'completed' ? 'TRAVELLED' : 'REJECTED'}
+                                                    </span>
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {reservations.filter(r => String(r.requester_id) === String(user.id) && (r.status === 'completed' || r.status === 'rejected')).map(req => (
-                                                <tr key={req.reservation_id} className="hover:bg-slate-50 transition border-b border-gray-100">
-                                                    <td className="px-6 py-4 font-black text-slate-700">{req.destination}</td>
-                                                    <td className="px-6 py-4 text-slate-500 font-bold">{new Date(req.start_datetime).toLocaleDateString()}</td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${req.status === 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-red-50 text-red-500'}`}>
-                                                            {req.status === 'completed' ? 'COMPLETED' : 'REJECTED'}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            {reservations.filter(r => String(r.requester_id) === String(user.id) && (r.status === 'completed' || r.status === 'rejected')).length === 0 && (
-                                                <tr><td colSpan="3" className="px-6 py-10 text-center text-slate-400">No past travel records found.</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        ))}
+                                        {myPastBookings.length === 0 && (
+                                            <tr><td colSpan="3" className="px-6 py-12 text-center text-slate-400 italic">No historical data available.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     )}
 
                     {activeTab === 'fleet' && renderFleet()}
 
-                    {/* Other tabs placeholders */}
-                    {!['overview', 'longdistance', 'fleet', 'approved-reservations', 'my-reservations', 'past-bookings'].includes(activeTab) && (
-                        <div className="card-gradient p-10 rounded-xl text-center">
-                            <i className="fas fa-wrench text-6xl text-slate-300 mb-6"></i>
-                            <h2 className="text-2xl font-bold text-slate-700">Under Maintenance</h2>
-                            <p className="text-slate-500 mt-2">The {activeTab} module is currently being updated to the new system.</p>
+                    {/* Settings Rendering */}
+                    {activeTab === 'settings' && (
+                        <SettingsTab 
+                            currentUser={user} 
+                            setShowProfileModal={setShowProfileModal} 
+                            showNotification={showNotification} 
+                            defaultSubTab={settingsSubTab}
+                            notifications={notifications}
+                            markNotificationAsRead={markNotificationAsRead}
+                            markAllNotificationsAsRead={markAllNotificationsAsRead}
+                        />
+                    )}
+
+                    {/* Placeholder for remaining sections */}
+                    {!['overview', 'longdistance', 'fleet', 'approved-reservations', 'my-reservations', 'user-pending-approvals', 'past-bookings', 'settings'].includes(activeTab) && (
+                        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-slate-200 animation-fade-in shadow-sm italic text-slate-400">
+                            <i className="fas fa-tools text-5xl mb-4"></i>
+                            <h2 className="text-xl font-bold mb-1 capitalize tracking-widest">{activeTab.replace('-', ' ')} Module</h2>
+                            <p>This feature is presently within the development cycle.</p>
                         </div>
                     )}
                 </div>

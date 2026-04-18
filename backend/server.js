@@ -7,6 +7,9 @@ import driverRoutes from './routes/driverRoutes.js';
 import reservationRoutes from './routes/reservationRoutes.js';
 import maintenanceRoutes from './routes/maintenanceRoutes.js';
 import fuelRoutes from './routes/fuelRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import systemRoutes from './routes/systemRoutes.js';
+import insuranceRoutes from './routes/insuranceRoutes.js';
 
 dotenv.config();
 
@@ -25,6 +28,9 @@ app.use('/api/drivers', driverRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/fuel', fuelRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/system', systemRoutes);
+app.use('/api/insurance', insuranceRoutes);
 
 // Root Endpoint
 app.get('/', (req, res) => {

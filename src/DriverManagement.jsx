@@ -1,6 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 import './Dashboard.css'; // Using the established University theme
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+// Register ChartJS components
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend
+);
 
 const DriverManagement = () => {
     const navigate = useNavigate();
@@ -16,10 +38,90 @@ const DriverManagement = () => {
 
     const [notification, setNotification] = useState({ message: '', type: '', visible: false });
 
+    // Performance State
+    const [performanceData, setPerformanceData] = useState([]);
+
+    // Calendar & Assignment States
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [assignments, setAssignments] = useState([]);
+
     // Notification Helper
     const showNotification = (message, type = 'success') => {
         setNotification({ message, type, visible: true });
         setTimeout(() => setNotification((prev) => ({ ...prev, visible: false })), 3000);
+    };
+
+    const fetchAssignments = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/reservations');
+            const data = await response.json();
+            if (response.ok) {
+                // Approved reservations are considered active assignments
+                setAssignments(data.filter(r => r.status === 'approved' && r.registration_number));
+            }
+        } catch (error) {
+            console.error("Error fetching assignments:", error);
+        }
+    };
+
+    // Calendar Helper Functions
+    const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+    const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
+    const changeMonth = (offset) => {
+        const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1);
+        setCurrentDate(newDate);
+    };
+
+    const renderCalendar = () => {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const daysInMonth = getDaysInMonth(year, month);
+        const firstDay = getFirstDayOfMonth(year, month);
+        const monthName = currentDate.toLocaleString('default', { month: 'long' });
+
+        const days = [];
+        // Add empty cells for days before the first day of the month
+        for (let i = 0; i < firstDay; i++) {
+            days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
+        }
+
+        // Add cells for each day of the month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayAssignments = assignments.filter(a => a.start_datetime.startsWith(dateStr));
+            
+            days.push(
+                <div key={day} className={`calendar-day ${dayAssignments.length > 0 ? 'has-assignment' : ''}`}>
+                    <span className="day-number">{day}</span>
+                    <div className="day-dots">
+                        {dayAssignments.slice(0, 3).map((a, idx) => (
+                            <div key={idx} className="assignment-dot" title={`${a.driver_first_name}: ${a.destination}`}></div>
+                        ))}
+                        {dayAssignments.length > 3 && <div className="assignment-more">+{dayAssignments.length - 3}</div>}
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="calendar-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm animate-fade-in">
+                <div className="calendar-header flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold text-slate-800">{monthName} {year}</h3>
+                    <div className="flex gap-2">
+                        <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"><i className="fas fa-chevron-left"></i></button>
+                        <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors uppercase tracking-wider">Today</button>
+                        <button onClick={() => changeMonth(1)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"><i className="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div className="calendar-grid">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} className="calendar-weekday text-center text-[10px] font-black uppercase text-slate-400 mb-2">{day}</div>
+                    ))}
+                    {days}
+                </div>
+            </div>
+        );
     };
 
     // Fetch drivers
@@ -54,9 +156,25 @@ const DriverManagement = () => {
         }
     };
 
+    const fetchPerformance = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/drivers/performance');
+            const data = await response.json();
+            if (response.ok) setPerformanceData(data);
+        } catch (error) {
+            console.error("Error fetching performance:", error);
+        }
+    };
+
     useEffect(() => {
         fetchDrivers();
-    }, []);
+        if (activeSection === 'assignments') {
+            fetchAssignments();
+        }
+        if (activeSection === 'performance') {
+            fetchPerformance();
+        }
+    }, [activeSection]);
 
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -145,12 +263,66 @@ const DriverManagement = () => {
 
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
+    const generateDriverReport = async () => {
+        const doc = new jsPDF();
+        
+        // Professional Header
+        doc.setFillColor(102, 0, 0);
+        doc.rect(0, 0, 210, 40, 'F');
+
+        // Add Logo (Above the rectangle)
+        const logoImg = new Image();
+        logoImg.src = '/assets/uok_logo.png';
+        await new Promise((resolve) => {
+            logoImg.onload = resolve;
+            logoImg.onerror = resolve;
+        });
+        doc.addImage(logoImg, 'PNG', 10, 8, 15, 15);
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('UNIVERSITY OF KELANIYA', 105, 20, { align: 'center' });
+        doc.setFontSize(14);
+        doc.text('TRANSPORT DIVISION - MASTER DRIVER ROSTER', 105, 32, { align: 'center' });
+        
+        doc.setTextColor(100, 100, 100);
+        doc.setFontSize(10);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 48);
+
+        const tableColumn = ["Name", "NIC", "Phone", "License No", "License Type", "Status"];
+        const tableRows = drivers.map(d => [
+            `${d.firstName} ${d.lastName}`,
+            d.nic,
+            d.phone,
+            d.license,
+            d.licenseType,
+            d.status.toUpperCase()
+        ]);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 55,
+            theme: 'grid',
+            headStyles: { fillColor: [102, 0, 0], textColor: [255, 255, 255] },
+            styles: { fontSize: 8, cellPadding: 3 }
+        });
+
+        doc.save(`UOK_Driver_Roster_Report.pdf`);
+        showNotification("Driver PDF Report Generated", "success");
+    };
+
     const backToDashboard = () => {
-        const role = sessionStorage.getItem('userRole');
-        if (role === 'sar') return navigate('/sar-dashboard');
-        if (role === 'registrar') return navigate('/registrar-dashboard');
-        if (role === 'management_assistant') return navigate('/management-dashboard');
-        return navigate('/admin-dashboard');
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const role = user.role;
+        if (role === 'registrar') navigate('/registrar-dashboard');
+        else if (role === 'sar') navigate('/sar-dashboard');
+        else if (role === 'hod') navigate('/hod-dashboard');
+        else if (role === 'dean') navigate('/dean-dashboard');
+        else if (role === 'admin') navigate('/admin-dashboard');
+        else if (role === 'management_assistant') navigate('/management-dashboard');
+        else navigate('/dashboard');
     };
 
     return (
@@ -201,10 +373,6 @@ const DriverManagement = () => {
                         <i className="fas fa-chart-line"></i>
                         <span>Performance</span>
                     </div>
-                    <div className={`menu-item ${activeSection === 'training' ? 'active' : ''}`} onClick={() => setActiveSection('training')}>
-                        <i className="fas fa-graduation-cap"></i>
-                        <span>Training</span>
-                    </div>
                 </div>
 
                 <div className="menu-section">
@@ -224,6 +392,14 @@ const DriverManagement = () => {
                         <p>Manage driver profiles, assignments, and performance.</p>
                     </div>
                     <div className="top-nav-right">
+                        <button 
+                            onClick={generateDriverReport}
+                            className="bg-white text-maroon p-2 rounded-lg border border-maroon hover:bg-maroon hover:text-white transition-all flex items-center gap-2 font-bold shadow-sm mr-4"
+                            title="Generate PDF Roster"
+                        >
+                            <i className="fas fa-file-pdf"></i>
+                            <span className="hidden md:inline">Generate PDF</span>
+                        </button>
                         <div className="user-profile">
                             <div className="user-avatar text-white font-bold flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #660000 0%, #800000 100%)', width: '40px', height: '40px', borderRadius: '50%' }}>
                                 {JSON.parse(localStorage.getItem('currentUser') || '{}').name ? JSON.parse(localStorage.getItem('currentUser') || '{}').name.substring(0, 2).toUpperCase() : 'AD'}
@@ -281,7 +457,7 @@ const DriverManagement = () => {
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => handleEdit(driver)}
-                                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white dev-btn py-2 text-sm rounded-lg transition-colors"
+                                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 text-sm rounded-lg transition-colors font-semibold"
                                                 >
                                                     Edit
                                                 </button>
@@ -416,59 +592,172 @@ const DriverManagement = () => {
                         </div>
                     )}
 
-                    {/* Assignments (Partial View) */}
+                    {/* Assignments (Full Calendar View) */}
                     {activeSection === 'assignments' && (
                         <div className="section animation-fade-in">
-                            <div className="section-header"><h2>Driver Assignments</h2></div>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                                    <h3 className="text-lg font-bold text-slate-800 mb-4">Today's Schedule</h3>
-                                    <div className="space-y-3">
-                                        {todayAssignments.map((assign, i) => (
-                                            <div key={i} className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex justify-between items-center">
-                                                <div>
-                                                    <div className="font-bold text-slate-800">{assign.driver}</div>
-                                                    <div className="text-sm text-slate-500">{assign.vehicle} • {assign.trip}</div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-sm font-bold text-blue-600">{assign.time}</div>
-                                                    <div className="text-xs text-green-600 font-medium">Scheduled</div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                            <div className="section-header">
+                                <h2>Driver Assignment Schedule</h2>
+                                <p className="text-slate-500 text-sm">Monthly overview of fleet deployments and driver schedules.</p>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+                                <div className="xl:col-span-8">
+                                    {renderCalendar()}
                                 </div>
-                                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-center">
-                                    <div className="text-center">
-                                        <i className="fas fa-calendar-alt text-slate-300 text-5xl mb-3"></i>
-                                        <p className="text-slate-500">Calendar View (Coming Soon)</p>
+                                
+                                <div className="xl:col-span-4 space-y-6">
+                                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                            <i className="fas fa-list-ul text-blue-500"></i> Active Assignments
+                                        </h3>
+                                        <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                                            {assignments.filter(a => a.start_datetime.startsWith(currentDate.toISOString().split('T')[0].substring(0, 7)))
+                                                .length === 0 ? (
+                                                    <p className="text-center py-8 text-slate-400 italic text-sm">No assignments for this month.</p>
+                                                ) : (
+                                                    assignments.filter(a => a.start_datetime.startsWith(currentDate.toISOString().split('T')[0].substring(0, 7)))
+                                                    .map((assign, i) => (
+                                                        <div key={i} className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex justify-between items-center hover:bg-slate-100 transition-colors">
+                                                            <div>
+                                                                <div className="font-bold text-slate-800 text-sm">{assign.driver_first_name} {assign.driver_last_name}</div>
+                                                                <div className="text-[11px] text-slate-500 mt-1">
+                                                                    <i className="fas fa-car mr-1 text-blue-400"></i> {assign.registration_number} • <i className="fas fa-map-marker-alt mr-1 text-red-400"></i> {assign.destination}
+                                                                </div>
+                                                                <div className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-wider">
+                                                                    {new Date(assign.start_datetime).toLocaleDateString()}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase tracking-tighter">
+                                                                    {new Date(assign.start_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </div>
+                                                                <div className="text-[9px] text-green-600 font-bold mt-2 flex items-center justify-end gap-1">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> Confirmed
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gradient-to-br from-red-800 to-red-900 p-6 rounded-2xl text-white shadow-lg border border-red-700">
+                                        <h4 className="font-bold flex items-center gap-2 mb-2">
+                                            <i className="fas fa-info-circle"></i> Deployment Tip
+                                        </h4>
+                                        <p className="text-xs text-red-100 leading-relaxed">
+                                            Click on dot indicators in the calendar to view assignment details. Dot colors represent vehicle types (Car, Bus, Van).
+                                        </p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Performance & Training Placeholders */}
-                    {(activeSection === 'performance' || activeSection === 'training') && (
-                        <div className="section text-center py-20 animation-fade-in">
-                            <i className={`fas ${activeSection === 'performance' ? 'fa-chart-line' : 'fa-graduation-cap'} text-slate-300 text-6xl mb-6`}></i>
-                            <h3 className="text-xl text-slate-800 font-bold mb-2 capitalize">{activeSection} Module</h3>
-                            <p className="text-slate-500">The <strong>{activeSection}</strong> interface is currently under development.</p>
+                    {/* Performance Module */}
+                    {activeSection === 'performance' && (
+                        <div className="section animation-fade-in">
+                            <div className="section-header">
+                                <h2>Driver Performance Analytics</h2>
+                                <p className="text-slate-500 text-sm">Quantifiable metrics for driver efficiency, safety, and reliability.</p>
+                            </div>
 
-                            {activeSection === 'performance' && (
-                                <div className="mt-8 max-w-md mx-auto bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                                    <h4 className="font-bold text-left mb-4">Top Performers Preview</h4>
-                                    {[1, 2, 3].map((rank) => (
-                                        <div key={rank} className="flex items-center justify-between mb-3 last:mb-0">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${rank === 1 ? 'bg-yellow-500' : rank === 2 ? 'bg-slate-400' : 'bg-orange-500'}`}>{rank}</div>
-                                                <span className="text-sm font-medium text-slate-700">Driver Name</span>
-                                            </div>
-                                            <div className="flex text-yellow-500 text-xs"><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i><i className="fas fa-star"></i></div>
-                                        </div>
-                                    ))}
+                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+                                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-blue-200">
+                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Fleet Avg Rating</p>
+                                    <h3 className="text-2xl font-black text-slate-800">
+                                        {(performanceData.reduce((acc, curr) => acc + parseFloat(curr.rating), 0) / (performanceData.length || 1)).toFixed(1)}
+                                        <i className="fas fa-star text-yellow-500 ml-2 text-lg"></i>
+                                    </h3>
+                                    <p className="text-[10px] text-green-600 font-bold mt-2 flex items-center gap-1">
+                                        <i className="fas fa-chevron-up"></i> Stable Performance
+                                    </p>
                                 </div>
-                            )}
+                                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-red-200">
+                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Total Trips (Completed)</p>
+                                    <h3 className="text-2xl font-black text-slate-800">{performanceData.reduce((acc, curr) => acc + curr.total_trips, 0)}</h3>
+                                    <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-tighter">Current Lifecycle</p>
+                                </div>
+                                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-amber-200">
+                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Distance Covered</p>
+                                    <h3 className="text-2xl font-black text-slate-800">{performanceData.reduce((acc, curr) => acc + parseFloat(curr.total_distance), 0).toLocaleString()} <span className="text-xs font-medium text-slate-400 uppercase">km</span></h3>
+                                    <p className="text-[10px] text-amber-600 font-bold mt-2 flex items-center gap-1 uppercase tracking-tighter">
+                                        <i className="fas fa-route"></i> Cumulative Fleet Usage
+                                    </p>
+                                </div>
+                                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm bg-gradient-to-br from-red-50 to-white">
+                                    <p className="text-[10px] font-black uppercase text-maroon tracking-widest mb-1">Top Performer</p>
+                                    <h3 className="text-sm font-bold text-slate-800 truncate mt-2">{performanceData[0]?.first_name} {performanceData[0]?.last_name}</h3>
+                                    <p className="text-[10px] text-maroon font-black mt-2 uppercase tracking-widest">
+                                        {performanceData[0]?.rating} Rating • {performanceData[0]?.total_trips} Trips
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                                <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                                    <h3 className="text-lg font-bold text-slate-800 mb-8">Trips Comparison</h3>
+                                    <div className="h-64">
+                                        {/* Using simple Bar chart logic from react-chartjs-2 */}
+                                        <Bar 
+                                            data={{
+                                                labels: performanceData.slice(0, 5).map(d => `${d.first_name} ${d.last_name.charAt(0)}.`),
+                                                datasets: [{
+                                                    label: 'Total Completed Trips',
+                                                    data: performanceData.slice(0, 5).map(d => d.total_trips),
+                                                    backgroundColor: ['#660000', '#800000', '#a52a2a', '#b22222', '#dc143c'],
+                                                    borderRadius: 8
+                                                }]
+                                            }}
+                                            options={{
+                                                responsive: true,
+                                                maintainAspectRatio: false,
+                                                plugins: { legend: { display: false } },
+                                                scales: { y: { beginAtZero: true, grid: { display: false } } }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                                    <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                                        <h3 className="font-bold text-slate-800">Performance Leaderboard</h3>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase">Ranked by Rating</span>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
+                                            <thead className="bg-slate-50">
+                                                <tr className="text-[10px] font-black uppercase text-slate-500">
+                                                    <th className="p-4">Rank</th>
+                                                    <th className="p-4">Driver</th>
+                                                    <th className="p-4 text-center">Rating</th>
+                                                    <th className="p-4 text-center">Trips</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {performanceData.map((d, i) => (
+                                                    <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                                        <td className="p-4 text-center font-black text-slate-300">#{i + 1}</td>
+                                                        <td className="p-4">
+                                                            <p className="font-bold text-slate-800 text-sm">{d.first_name} {d.last_name}</p>
+                                                            <p className="text-[10px] text-slate-400">{d.total_distance.toLocaleString()} km total</p>
+                                                        </td>
+                                                        <td className="p-4 text-center">
+                                                            <div className="flex justify-center items-center gap-1 text-yellow-500">
+                                                                <span className="font-black text-slate-800 mr-1 text-sm">{d.rating}</span>
+                                                                <i className="fas fa-star text-[10px]"></i>
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-4 text-center">
+                                                            <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-black">{d.total_trips}</span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 

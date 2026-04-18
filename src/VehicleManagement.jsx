@@ -62,7 +62,32 @@ const VehicleManagement = () => {
         endDate: new Date().toISOString().split('T')[0]
     });
 
+    const [reservations, setReservations] = useState([]);
+    const [trendData, setTrendData] = useState({
+        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        datasets: [{
+            label: 'Total Trips',
+            data: [0, 0, 0, 0],
+            borderColor: '#660000',
+            backgroundColor: 'rgba(102, 0, 0, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    });
+
     const [notification, setNotification] = useState({ message: '', type: '', visible: false });
+
+    // Insurance States
+    const [insuranceRecords, setInsuranceRecords] = useState([]);
+    const [insuranceFormData, setInsuranceFormData] = useState({
+        vehicle_id: '',
+        provider_name: '',
+        policy_number: '',
+        start_date: new Date().toISOString().split('T')[0],
+        expiry_date: '',
+        premium_amount: '',
+        status: 'active'
+    });
 
     // Notification Helper
     const showNotification = (message, type = 'success') => {
@@ -129,7 +154,90 @@ const VehicleManagement = () => {
         fetchDrivers();
         fetchMaintenance();
         fetchFuelRecords();
+        fetchInsurance();
     }, []);
+
+    const fetchInsurance = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/insurance');
+            const data = await response.json();
+            if (response.ok) setInsuranceRecords(data);
+        } catch (error) {
+            console.error("Error fetching insurance:", error);
+        }
+    };
+
+    const fetchReservationsTrend = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/reservations');
+            const data = await response.json();
+            if (response.ok) {
+                setReservations(data);
+
+                // Group by week for the last 30 days
+                const now = new Date();
+                const weeks = [[], [], [], []];
+                const weekLabels = [];
+
+                for (let i = 3; i >= 0; i--) {
+                    const start = new Date();
+                    start.setDate(now.getDate() - (i + 1) * 7);
+                    const end = new Date();
+                    end.setDate(now.getDate() - i * 7);
+                    weekLabels.push(`Week ${4 - i}`);
+
+                    const count = data.filter(r => {
+                        const rDate = new Date(r.start_datetime);
+                        return rDate >= start && rDate < end;
+                    }).length;
+                    weeks[3 - i] = count;
+                }
+
+                setTrendData({
+                    labels: weekLabels,
+                    datasets: [{
+                        label: 'Total Trips',
+                        data: weeks,
+                        borderColor: '#660000',
+                        backgroundColor: 'rgba(102, 0, 0, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                });
+            }
+        } catch (error) {
+            console.error("Error fetching reservations trend:", error);
+        }
+    };
+
+    const handleInsuranceSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await fetch('http://localhost:5000/api/insurance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(insuranceFormData)
+            });
+            if (response.ok) {
+                showNotification("Insurance policy added successfully!");
+                setInsuranceFormData({
+                    vehicle_id: '',
+                    provider_name: '',
+                    policy_number: '',
+                    start_date: new Date().toISOString().split('T')[0],
+                    expiry_date: '',
+                    premium_amount: '',
+                    status: 'active'
+                });
+                fetchInsurance();
+            } else {
+                const data = await response.json();
+                showNotification(data.message || "Failed to add insurance", "error");
+            }
+        } catch (error) {
+            showNotification("Failed to add insurance record", "error");
+        }
+    };
 
     const fetchFuelRecords = async () => {
         try {
@@ -155,6 +263,9 @@ const VehicleManagement = () => {
     useEffect(() => {
         if (activeSection === 'fuel-management') {
             fetchFuelReport();
+        }
+        if (activeSection === 'statistics') {
+            fetchReservationsTrend();
         }
     }, [activeSection, reportFilter]);
 
@@ -290,13 +401,6 @@ const VehicleManagement = () => {
         setActiveSection('vehicle-list');
     };
 
-
-    const insuranceRecords = [
-        { vehicle: 'KI-1234', company: 'SLIC', policy: 'POL001234', expiry: '2025-05-15', premium: 'Rs. 25,000', status: 'Active' },
-        { vehicle: 'KI-5678', company: 'Ceylinco', policy: 'POL005678', expiry: '2025-03-20', premium: 'Rs. 35,000', status: 'Active' },
-        { vehicle: 'KI-9012', company: 'SLIC', policy: 'POL009012', expiry: '2024-12-10', premium: 'Rs. 28,000', status: 'Expiring Soon' }
-    ];
-
     const fuelRecords = [
         { vehicle: 'KI-1234', date: '2024-10-25', liters: 35, cost: '12,500', driver: 'Mr. Perera' },
         { vehicle: 'KI-3456', date: '2024-10-24', liters: 60, cost: '21,000', driver: 'Mr. Kumara' },
@@ -320,17 +424,7 @@ const VehicleManagement = () => {
         ]
     };
 
-    const usageTrendData = {
-        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-        datasets: [{
-            label: 'Total Trips',
-            data: [25, 32, 28, 35],
-            borderColor: '#660000',
-            backgroundColor: 'rgba(102, 0, 0, 0.1)',
-            tension: 0.4,
-            fill: true
-        }]
-    };
+    // Chart Data logic moved to fetchReservationsTrend effect
 
     useEffect(() => {
         const isLoggedIn = sessionStorage.getItem('isLoggedIn');
@@ -338,6 +432,56 @@ const VehicleManagement = () => {
             navigate('/login');
         }
     }, [navigate]);
+
+    const generateVehicleReport = async () => {
+        const doc = new jsPDF();
+        
+        // Professional Header
+        doc.setFillColor(102, 0, 0);
+        doc.rect(0, 0, 210, 40, 'F');
+
+        // Add Logo (Above the rectangle)
+        const logoImg = new Image();
+        logoImg.src = '/assets/uok_logo.png';
+        await new Promise((resolve) => {
+            logoImg.onload = resolve;
+            logoImg.onerror = resolve;
+        });
+        doc.addImage(logoImg, 'PNG', 10, 8, 15, 15);
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('UNIVERSITY OF KELANIYA', 105, 20, { align: 'center' });
+        doc.setFontSize(14);
+        doc.text('FLEET MANAGEMENT - MASTER VEHICLE REPORT', 105, 32, { align: 'center' });
+        
+        doc.setTextColor(100, 100, 100);
+        doc.setFontSize(10);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 48);
+
+        const tableColumn = ["Reg Number", "Make/Model", "Type", "Capacity", "Fuel", "Status"];
+        const tableRows = vehicles.map(v => [
+            v.registration_number,
+            `${v.make} ${v.model}`,
+            v.type,
+            v.seating_capacity,
+            v.fuel_type,
+            v.status.toUpperCase()
+        ]);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 55,
+            theme: 'grid',
+            headStyles: { fillColor: [102, 0, 0], textColor: [255, 255, 255] },
+            styles: { fontSize: 8, cellPadding: 3 }
+        });
+
+        doc.save(`UOK_Vehicle_Fleet_Report.pdf`);
+        showNotification("PDF Report Generated Successfully", "success");
+    };
 
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -409,20 +553,15 @@ const VehicleManagement = () => {
     };
 
     const backToDashboard = () => {
-        const role = sessionStorage.getItem('userRole');
-        if (role === 'sar') {
-            navigate('/sar-dashboard');
-            return;
-        }
-        if (role === 'registrar') {
-            navigate('/registrar-dashboard');
-            return;
-        }
-        if (role === 'management_assistant') {
-            navigate('/management-dashboard');
-            return;
-        }
-        navigate('/admin-dashboard');
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const role = user.role;
+        if (role === 'registrar') navigate('/registrar-dashboard');
+        else if (role === 'sar') navigate('/sar-dashboard');
+        else if (role === 'hod') navigate('/hod-dashboard');
+        else if (role === 'dean') navigate('/dean-dashboard');
+        else if (role === 'admin') navigate('/admin-dashboard');
+        else if (role === 'management_assistant') navigate('/management-dashboard');
+        else navigate('/dashboard');
     };
 
     return (
@@ -465,10 +604,7 @@ const VehicleManagement = () => {
 
                 <div className="menu-section">
                     <div className="menu-section-title">Records</div>
-                    <div className={`menu-item ${activeSection === 'maintenance' ? 'active' : ''}`} onClick={() => setActiveSection('maintenance')}>
-                        <i className="fas fa-wrench"></i>
-                        <span>Maintenance</span>
-                    </div>
+
                     <div className={`menu-item ${activeSection === 'fuel-management' ? 'active' : ''}`} onClick={() => setActiveSection('fuel-management')}>
                         <i className="fas fa-gas-pump"></i>
                         <span>Fuel Mgmt</span>
@@ -500,11 +636,14 @@ const VehicleManagement = () => {
                         <p>Manage university fleet, maintenance, and records.</p>
                     </div>
                     <div className="top-nav-right">
-                        <div className="user-profile">
-                            <div className="user-avatar text-white font-bold flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #660000 0%, #800000 100%)', width: '40px', height: '40px', borderRadius: '50%' }}>
-                                {JSON.parse(localStorage.getItem('currentUser') || '{}').name ? JSON.parse(localStorage.getItem('currentUser') || '{}').name.substring(0, 2).toUpperCase() : 'AD'}
-                            </div>
-                        </div>
+                        <button 
+                            onClick={generateVehicleReport}
+                            className="bg-white text-maroon p-2 rounded-lg border border-maroon hover:bg-maroon hover:text-white transition-all flex items-center gap-2 font-bold shadow-sm"
+                            title="Generate PDF Report"
+                        >
+                            <i className="fas fa-file-pdf"></i>
+                            <span className="hidden md:inline">Generate PDF</span>
+                        </button>
                     </div>
                 </div>
 
@@ -746,61 +885,7 @@ const VehicleManagement = () => {
                         </div>
                     )}
 
-                    {/* Maintenance */}
-                    {activeSection === 'maintenance' && (
-                        <div className="section animation-fade-in">
-                            <div className="section-header"><h2><i className="fas fa-wrench mr-2"></i> Maintenance Records</h2></div>
-                            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
-                                <table className="w-full text-left data-table">
-                                    <thead className="bg-slate-50 border-b border-slate-200">
-                                        <tr>
-                                            <th className="p-4 font-semibold text-slate-700 uppercase text-xs tracking-wider">Vehicle</th>
-                                            <th className="p-4 font-semibold text-slate-700 uppercase text-xs tracking-wider">Service Type</th>
-                                            <th className="p-4 font-semibold text-slate-700 uppercase text-xs tracking-wider">Date</th>
-                                            <th className="p-4 font-semibold text-slate-700 uppercase text-xs tracking-wider">Cost</th>
-                                            <th className="p-4 font-semibold text-slate-700 uppercase text-xs tracking-wider">Status</th>
-                                            <th className="p-4 font-semibold text-slate-700 uppercase text-xs tracking-wider">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {maintenanceRecords.map((rec, i) => (
-                                            <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                                <td className="p-4 font-medium text-slate-800">{rec.registration_number}</td>
-                                                <td className="p-4 text-slate-600">
-                                                    <div>{rec.service_type}</div>
-                                                    <div className="text-xs text-slate-400 truncate max-w-xs">{rec.issue_description}</div>
-                                                </td>
-                                                <td className="p-4 text-slate-500">{new Date(rec.service_date).toLocaleDateString()}</td>
-                                                <td className="p-4 font-medium text-slate-800">LKR {rec.cost?.toLocaleString()}</td>
-                                                <td className="p-4">
-                                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${rec.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                        rec.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                                            rec.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
-                                                                'bg-yellow-100 text-yellow-800'
-                                                        }`}>
-                                                        {rec.status.replace('_', ' ').charAt(0).toUpperCase() + rec.status.replace('_', ' ').slice(1)}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4">
-                                                    <button
-                                                        onClick={() => setSelectedMaintenance(rec)}
-                                                        className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1"
-                                                    >
-                                                        <i className="fas fa-eye"></i> View Details
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {maintenanceRecords.length === 0 && (
-                                            <tr>
-                                                <td colSpan="6" className="p-8 text-center text-slate-400">No maintenance records found.</td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
+
 
                     {/* Fuel Management */}
                     {activeSection === 'fuel-management' && (
@@ -975,35 +1060,154 @@ const VehicleManagement = () => {
                     {activeSection === 'insurance' && (
                         <div className="section animation-fade-in">
                             <div className="section-header"><h2><i className="fas fa-shield-alt mr-2"></i> Insurance Management</h2></div>
-                            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
-                                <table className="w-full text-left data-table">
-                                    <thead className="bg-slate-50 border-b border-slate-200">
-                                        <tr>
-                                            <th className="p-4 font-semibold text-slate-700 uppercase text-xs tracking-wider">Vehicle</th>
-                                            <th className="p-4 font-semibold text-slate-700 uppercase text-xs tracking-wider">Company</th>
-                                            <th className="p-4 font-semibold text-slate-700 uppercase text-xs tracking-wider">Policy No</th>
-                                            <th className="p-4 font-semibold text-slate-700 uppercase text-xs tracking-wider">Expiry</th>
-                                            <th className="p-4 font-semibold text-slate-700 uppercase text-xs tracking-wider">Premium</th>
-                                            <th className="p-4 font-semibold text-slate-700 uppercase text-xs tracking-wider">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {insuranceRecords.map((rec, i) => (
-                                            <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                                <td className="p-4 font-medium text-slate-800">{rec.vehicle}</td>
-                                                <td className="p-4 text-slate-600">{rec.company}</td>
-                                                <td className="p-4 text-slate-500">{rec.policy}</td>
-                                                <td className="p-4 text-slate-600 font-medium">{rec.expiry}</td>
-                                                <td className="p-4 text-slate-600">{rec.premium}</td>
-                                                <td className="p-4">
-                                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${rec.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                        {rec.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                {/* Add Insurance Form */}
+                                <div className="lg:col-span-1">
+                                    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                                        <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                            <span className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><i className="fas fa-plus text-xs"></i></span>
+                                            New Insurance Policy
+                                        </h3>
+                                        <form onSubmit={handleInsuranceSubmit} className="space-y-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Vehicle</label>
+                                                <select
+                                                    required
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                                                    value={insuranceFormData.vehicle_id}
+                                                    onChange={(e) => setInsuranceFormData({ ...insuranceFormData, vehicle_id: e.target.value })}
+                                                >
+                                                    <option value="">Select Vehicle</option>
+                                                    {vehicles.map(v => <option key={v.id} value={v.id}>{v.number}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Provider Name</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    placeholder="e.g. SLIC, Ceylinco"
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm"
+                                                    value={insuranceFormData.provider_name}
+                                                    onChange={(e) => setInsuranceFormData({ ...insuranceFormData, provider_name: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Policy Number</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    placeholder="POL-000000"
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm"
+                                                    value={insuranceFormData.policy_number}
+                                                    onChange={(e) => setInsuranceFormData({ ...insuranceFormData, policy_number: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Start Date</label>
+                                                    <input
+                                                        type="date"
+                                                        required
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm"
+                                                        value={insuranceFormData.start_date}
+                                                        onChange={(e) => setInsuranceFormData({ ...insuranceFormData, start_date: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Expiry Date</label>
+                                                    <input
+                                                        type="date"
+                                                        required
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm"
+                                                        value={insuranceFormData.expiry_date}
+                                                        onChange={(e) => setInsuranceFormData({ ...insuranceFormData, expiry_date: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Premium Amount (LKR)</label>
+                                                <input
+                                                    type="number"
+                                                    required
+                                                    placeholder="0.00"
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm"
+                                                    value={insuranceFormData.premium_amount}
+                                                    onChange={(e) => setInsuranceFormData({ ...insuranceFormData, premium_amount: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Initial Status</label>
+                                                <select
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm"
+                                                    value={insuranceFormData.status}
+                                                    onChange={(e) => setInsuranceFormData({ ...insuranceFormData, status: e.target.value })}
+                                                >
+                                                    <option value="active">Active</option>
+                                                    <option value="pending_renewal">Pending Renewal</option>
+                                                </select>
+                                            </div>
+                                            <button
+                                                type="submit"
+                                                className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-md mt-4"
+                                            >
+                                                Register Policy
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                {/* Records Table */}
+                                <div className="lg:col-span-2">
+                                    <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left data-table">
+                                                <thead className="bg-slate-50 border-b border-slate-200">
+                                                    <tr>
+                                                        <th className="p-4 font-bold text-slate-600 uppercase text-[10px] tracking-wider text-center">Vehicle</th>
+                                                        <th className="p-4 font-bold text-slate-600 uppercase text-[10px] tracking-wider">Provider</th>
+                                                        <th className="p-4 font-bold text-slate-600 uppercase text-[10px] tracking-wider">Policy No</th>
+                                                        <th className="p-4 font-bold text-slate-600 uppercase text-[10px] tracking-wider">Validity</th>
+                                                        <th className="p-4 font-bold text-slate-600 uppercase text-[10px] tracking-wider">Premium</th>
+                                                        <th className="p-4 font-bold text-slate-600 uppercase text-[10px] tracking-wider text-center">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {insuranceRecords.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan="6" className="p-10 text-center text-slate-400 italic">No insurance records found.</td>
+                                                        </tr>
+                                                    ) : (
+                                                        insuranceRecords.map((rec, i) => (
+                                                            <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                                                                <td className="p-4 text-center">
+                                                                    <span className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-black text-slate-700">{rec.registration_number}</span>
+                                                                </td>
+                                                                <td className="p-4 font-bold text-slate-700 text-sm">{rec.provider_name}</td>
+                                                                <td className="p-4 text-slate-500 font-mono text-xs">{rec.policy_number}</td>
+                                                                <td className="p-4 text-slate-600 text-[11px] font-semibold">
+                                                                    {new Date(rec.start_date).toLocaleDateString()} - {new Date(rec.expiry_date).toLocaleDateString()}
+                                                                </td>
+                                                                <td className="p-4 text-emerald-600 font-bold text-sm">
+                                                                    Rs. {parseFloat(rec.premium_amount).toLocaleString()}
+                                                                </td>
+                                                                <td className="p-4 text-center">
+                                                                    <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${new Date(rec.expiry_date) < new Date() || rec.status === 'expired' ? 'bg-rose-100 text-rose-700' :
+                                                                        rec.status === 'pending_renewal' ? 'bg-amber-100 text-amber-700' :
+                                                                            'bg-emerald-100 text-emerald-700'
+                                                                        }`}>
+                                                                        {new Date(rec.expiry_date) < new Date() ? 'Expired' : rec.status.replace('_', ' ')}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -1036,7 +1240,7 @@ const VehicleManagement = () => {
                                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                                     <h3 className="text-xl font-bold mb-4 text-slate-800">Usage Trends</h3>
                                     <div className="h-64 w-full">
-                                        <Line data={usageTrendData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
+                                        <Line data={trendData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
                                     </div>
                                 </div>
                             </div>

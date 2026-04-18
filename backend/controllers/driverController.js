@@ -106,3 +106,29 @@ export const updateDriver = async (req, res) => {
         res.status(500).json({ message: 'Failed to update driver', error: error.message });
     }
 };
+
+// @desc    Get driver performance stats
+// @route   GET /api/drivers/performance
+// @access  Private
+export const getDriverPerformance = async (req, res) => {
+    try {
+        const [stats] = await db.query(`
+            SELECT 
+                d.driver_id, 
+                d.first_name, 
+                d.last_name, 
+                d.rating,
+                COUNT(r.reservation_id) as total_trips,
+                IFNULL(SUM(r.distance_km), 0) as total_distance
+            FROM drivers d
+            LEFT JOIN vehicles v ON d.driver_id = v.assigned_driver_id
+            LEFT JOIN reservations r ON v.vehicle_id = r.vehicle_id AND r.status = 'completed'
+            GROUP BY d.driver_id
+            ORDER BY d.rating DESC, total_trips DESC
+        `);
+        res.json(stats);
+    } catch (error) {
+        console.error('Error fetching driver performance:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};

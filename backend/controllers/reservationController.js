@@ -1,4 +1,5 @@
 import db from '../config/db.js';
+import { createNotification } from '../utils/notificationHelper.js';
 
 // @desc    Create a reservation
 // @route   POST /api/reservations
@@ -169,6 +170,32 @@ export const updateReservationStatus = async (req, res) => {
         // 3. Execute Update
         if (updateQuery) {
             await db.query(updateQuery, queryParams);
+
+            // 4. Send Notification to Requester
+            const requesterId = reservation.requester_id;
+            let notificationTitle = "Reservation Update";
+            let notificationMessage = `Your reservation request to ${reservation.destination} has been updated.`;
+            let notificationType = "info";
+
+            if (status === 'rejected') {
+                notificationTitle = "Reservation Rejected";
+                notificationMessage = `Your reservation request to ${reservation.destination} has been rejected by ${level ? level.toUpperCase() : 'Administrator'}.`;
+                notificationType = "error";
+            } else if (status === 'approved' || updateQuery.includes('status = \'approved\'')) {
+                const finalApproved = updateQuery.includes("status = 'approved'");
+                notificationTitle = finalApproved ? "Reservation Approved" : "Reservation Level Approved";
+                notificationMessage = finalApproved 
+                    ? `Your reservation request to ${reservation.destination} has been fully approved!` 
+                    : `Your reservation request to ${reservation.destination} has been approved by ${level.toUpperCase()} and is moving to the next level.`;
+                notificationType = "success";
+            } else if (status === 'cancelled') {
+                notificationTitle = "Reservation Cancelled";
+                notificationMessage = `You have successfully cancelled your reservation request to ${reservation.destination}.`;
+                notificationType = "info";
+            }
+
+            await createNotification(requesterId, notificationTitle, notificationMessage, notificationType);
+
             res.json({ message: `Reservation status updated successfully`, status: newStatus });
         } else {
             res.status(400).json({ message: "Invalid update parameters" });

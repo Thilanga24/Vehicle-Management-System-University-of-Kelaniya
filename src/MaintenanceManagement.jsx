@@ -57,11 +57,15 @@ const MaintenanceManagement = () => {
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
     const backToDashboard = () => {
-        const role = sessionStorage.getItem('userRole');
-        if (role === 'sar') return navigate('/sar-dashboard');
-        if (role === 'registrar') return navigate('/registrar-dashboard');
-        if (role === 'management_assistant') return navigate('/management-dashboard');
-        return navigate('/admin-dashboard');
+        const userObj = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const role = userObj.role;
+        if (role === 'registrar') navigate('/registrar-dashboard');
+        else if (role === 'sar') navigate('/sar-dashboard');
+        else if (role === 'hod') navigate('/hod-dashboard');
+        else if (role === 'dean') navigate('/dean-dashboard');
+        else if (role === 'admin') navigate('/admin-dashboard');
+        else if (role === 'management_assistant') navigate('/management-dashboard');
+        else navigate('/dashboard');
     };
 
     // --- Real Data States ---
@@ -72,6 +76,7 @@ const MaintenanceManagement = () => {
         monthlyCost: 0
     });
     const [records, setRecords] = useState([]);
+    const [selectedMaintenance, setSelectedMaintenance] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [vehicles, setVehicles] = useState([]);
 
@@ -206,9 +211,9 @@ const MaintenanceManagement = () => {
                     <i className="fas fa-wrench"></i>
                     <span>Active Jobs</span>
                 </div>
-                <div className={`menu-item ${activeSection === 'history' ? 'active' : ''}`} onClick={() => setActiveSection('history')}>
-                    <i className="fas fa-history"></i>
-                    <span>History</span>
+                <div className={`menu-item ${activeSection === 'logs' ? 'active' : ''}`} onClick={() => setActiveSection('logs')}>
+                    <i className="fas fa-file-invoice-dollar"></i>
+                    <span>Maintenance Logs</span>
                 </div>
                 <div className={`menu-item ${activeSection === 'report-issue' ? 'active' : ''}`} onClick={() => setActiveSection('report-issue')}>
                     <i className="fas fa-exclamation-triangle"></i>
@@ -698,6 +703,73 @@ const MaintenanceManagement = () => {
         setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + offset, 1));
     };
 
+    const renderMaintenanceModal = () => {
+        if (!selectedMaintenance) return null;
+
+        return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedMaintenance(null)}></div>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl z-10 overflow-hidden animation-pop-in">
+                    <div className="bg-maroon p-6 text-white flex justify-between items-center">
+                        <div>
+                            <h3 className="text-xl font-bold">Maintenance Details</h3>
+                            <p className="text-maroon-light text-sm opacity-80">{selectedMaintenance.registration_number} • {selectedMaintenance.service_type}</p>
+                        </div>
+                        <button onClick={() => setSelectedMaintenance(null)} className="text-white hover:bg-white/10 p-2 rounded-full transition-colors">
+                            <i className="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+
+                    <div className="p-8 space-y-8">
+                        <div className="grid grid-cols-2 gap-8">
+                            <div>
+                                <label className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Service Date</label>
+                                <p className="text-slate-800 font-medium">{new Date(selectedMaintenance.service_date).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Status</label>
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${selectedMaintenance.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                    {selectedMaintenance.status.replace('_', ' ')}
+                                </span>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Garage / Service Center</label>
+                                <p className="text-slate-800 font-medium">{selectedMaintenance.garage_name || 'Not Specified'}</p>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Final Cost</label>
+                                <p className="text-slate-800 font-bold text-lg">LKR {selectedMaintenance.cost?.toLocaleString() || '0'}</p>
+                            </div>
+                        </div>
+
+                        <div className="border-t border-slate-100 pt-6">
+                            <label className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2">Issue / Service Description</label>
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">
+                                {selectedMaintenance.issue_description || 'No description provided.'}
+                            </div>
+                        </div>
+
+                        {selectedMaintenance.completion_date && (
+                            <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-50 p-3 rounded-lg">
+                                <i className="fas fa-info-circle"></i>
+                                <span>Completed on {new Date(selectedMaintenance.completion_date).toLocaleDateString()}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="bg-slate-50 p-6 flex justify-end">
+                        <button
+                            onClick={() => setSelectedMaintenance(null)}
+                            className="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold transition-colors"
+                        >
+                            Close Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const renderSchedule = () => {
         const calendarDays = getCalendarDays();
         return (
@@ -767,6 +839,7 @@ const MaintenanceManagement = () => {
             </div>
 
             {renderSidebar()}
+            {renderMaintenanceModal()}
 
             <div className="main-content">
                 <div className="top-nav">
@@ -789,10 +862,10 @@ const MaintenanceManagement = () => {
                     {activeSection === 'report-issue' && renderIssueForm()}
                     {activeSection === 'complete-job' && renderCompletionForm()}
 
-                    {(activeSection === 'active' || activeSection === 'history') && (
+                    {(activeSection === 'active' || activeSection === 'logs' || activeSection === 'history') && (
                         <div className="section animation-fade-in">
                             <h1 className="text-2xl font-bold text-slate-800 mb-6 capitalize">
-                                {activeSection === 'active' ? '🔧 Active Maintenance Jobs' : '📜 Maintenance History'}
+                                {activeSection === 'active' ? '🔧 Active Maintenance Jobs' : '📜 Maintenance Logs'}
                             </h1>
                             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                 <table className="w-full text-left">
@@ -802,12 +875,12 @@ const MaintenanceManagement = () => {
                                             <th className="p-4">Service</th>
                                             <th className="p-4">Date</th>
                                             <th className="p-4">{activeSection === 'active' ? 'Mechanic' : 'Cost'}</th>
-                                            <th className="p-4">Priority</th>
+                                            <th className="p-4">Status</th>
                                             <th className="p-4">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {(activeSection === 'active' ? activeJobs : maintenanceHistoryData).map((item, i) => (
+                                        {(activeSection === 'active' ? activeJobs : (activeSection === 'logs' ? records : maintenanceHistoryData)).map((item, i) => (
                                             <tr key={i} className="hover:bg-slate-50 transition">
                                                 <td className="p-4">
                                                     <div className="font-bold text-slate-800">{item.registration_number}</div>
@@ -824,18 +897,25 @@ const MaintenanceManagement = () => {
                                                     {activeSection === 'active' ? (item.garage_name || 'Unassigned') : `LKR ${item.cost?.toLocaleString()}`}
                                                 </td>
                                                 <td className="p-4">
-                                                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${item.priority === 'critical' ? 'bg-red-100 text-red-600' :
-                                                        item.priority === 'high' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'
+                                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${item.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                        item.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                                            item.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
+                                                                'bg-yellow-100 text-yellow-800'
                                                         }`}>
-                                                        {item.priority}
+                                                        {item.status.replace('_', ' ').charAt(0).toUpperCase() + item.status.replace('_', ' ').slice(1)}
                                                     </span>
                                                 </td>
                                                 <td className="p-4">
-                                                    <button className="text-slate-400 hover:text-blue-600 transition"><i className="fas fa-ellipsis-v"></i></button>
+                                                    <button 
+                                                        onClick={() => setSelectedMaintenance(item)}
+                                                        className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1"
+                                                    >
+                                                        <i className="fas fa-eye"></i> View
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}
-                                        {(activeSection === 'active' ? activeJobs : maintenanceHistoryData).length === 0 && (
+                                        {(activeSection === 'active' ? activeJobs : (activeSection === 'logs' ? records : maintenanceHistoryData)).length === 0 && (
                                             <tr>
                                                 <td colSpan="6" className="p-20 text-center">
                                                     <i className="fas fa-inbox text-slate-200 text-5xl mb-4"></i>
