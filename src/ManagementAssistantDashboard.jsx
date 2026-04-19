@@ -89,7 +89,7 @@ const ManagementAssistantDashboard = () => {
     const fetchReservations = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://localhost:5000/api/reservations');
+            const response = await fetch('/api/reservations');
             if (response.ok) {
                 const data = await response.json();
                 setReservations(data);
@@ -125,7 +125,7 @@ const ManagementAssistantDashboard = () => {
 
     const fetchVehicles = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/vehicles');
+            const response = await fetch('/api/vehicles');
             if (response.ok) setVehicles(await response.json());
         } catch (error) { console.error('Error fetching vehicles:', error); }
     };
@@ -134,7 +134,7 @@ const ManagementAssistantDashboard = () => {
         try {
             const { vehicleId, startDate, endDate } = reportFilters;
             const endpoint = reportCategory === 'fuel' ? 'fuel/report' : 'maintenance/report';
-            const response = await fetch(`http://localhost:5000/api/${endpoint}?vehicle_id=${vehicleId}&startDate=${startDate}&endDate=${endDate}`);
+            const response = await fetch(`/api/${endpoint}?vehicle_id=${vehicleId}&startDate=${startDate}&endDate=${endDate}`);
             if (response.ok) {
                 const data = await response.json();
                 setReportStats({
@@ -157,7 +157,7 @@ const ManagementAssistantDashboard = () => {
         try {
             const { vehicleId, startDate, endDate } = reportFilters;
             const endpoint = reportCategory === 'fuel' ? 'api/fuel' : 'api/maintenance';
-            const response = await fetch(`http://localhost:5000/${endpoint}`);
+            const response = await fetch(`/${endpoint}`);
             if (!response.ok) throw new Error('Failed to fetch records');
 
             let allRecords = await response.json();

@@ -52,7 +52,7 @@ const SARDashboard = () => {
     const fetchReservations = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://localhost:5000/api/reservations');
+            const response = await fetch('/api/reservations');
             if (response.ok) {
                 const data = await response.json();
                 setReservations(data);
@@ -139,7 +139,7 @@ const SARDashboard = () => {
         try {
             const apiStatus = action === 'reject' ? 'rejected' : 'approved';
             // Note: Our backend handles forwarding automatically if level='sar' and dist > 100
-            const response = await fetch(`http://localhost:5000/api/reservations/${selectedRequest.id}`, {
+            const response = await fetch(`/api/reservations/${selectedRequest.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -800,7 +800,7 @@ const SARDashboard = () => {
                             {selectedRequest.attachment_url && (
                                 <div className="col-span-2 mt-2">
                                     <p className="text-gray-400 text-xs text-slate-800 font-bold uppercase">Attachment</p>
-                                    <a href={`http://localhost:5000${selectedRequest.attachment_url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-2">
+                                    <a href={`${selectedRequest.attachment_url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-2">
                                         <i className="fas fa-paperclip"></i> View Attached Document
                                     </a>
                                 </div>

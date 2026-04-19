@@ -98,7 +98,7 @@ const DeanDashboard = () => {
     const fetchNotifications = async () => {
         try {
             if (!user?.id) return;
-            const response = await fetch(`http://localhost:5000/api/notifications/${user.id}`);
+            const response = await fetch(`/api/notifications/${user.id}`);
             if (response.ok) {
                 const data = await response.json();
                 setNotifications(data);
@@ -110,7 +110,7 @@ const DeanDashboard = () => {
 
     const markNotificationAsRead = async (id) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+            const response = await fetch(`/api/notifications/${id}/read`, {
                 method: 'PUT'
             });
             if (response.ok) {
@@ -125,7 +125,7 @@ const DeanDashboard = () => {
         try {
             const unread = notifications.filter(n => !n.is_read);
             for (const n of unread) {
-                await fetch(`http://localhost:5000/api/notifications/${n.notification_id}/read`, {
+                await fetch(`/api/notifications/${n.notification_id}/read`, {
                     method: 'PUT'
                 });
             }
@@ -139,7 +139,7 @@ const DeanDashboard = () => {
     const fetchReservations = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://localhost:5000/api/reservations');
+            const response = await fetch('/api/reservations');
             if (response.ok) {
                 const data = await response.json();
                 setReservations(data);
@@ -258,7 +258,7 @@ const DeanDashboard = () => {
         if (!selectedRequest) return;
 
         try {
-            const response = await fetch(`http://localhost:5000/api/reservations/${selectedRequest.id}`, {
+            const response = await fetch(`/api/reservations/${selectedRequest.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -297,7 +297,7 @@ const DeanDashboard = () => {
 
         try {
             const token = sessionStorage.getItem('authToken');
-            const response = await fetch(`http://localhost:5000/api/reservations/${cancelRequestId}`, {
+            const response = await fetch(`/api/reservations/${cancelRequestId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1277,7 +1277,7 @@ const DeanDashboard = () => {
                                 {selectedRequest.attachment_url && (
                                     <div className="col-span-2 mt-2">
                                         <p className="text-gray-400 text-xs">Attachment</p>
-                                        <a href={`http://localhost:5000${selectedRequest.attachment_url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-2">
+                                        <a href={`${selectedRequest.attachment_url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-2">
                                             <i className="fas fa-paperclip"></i> View Attached Document
                                         </a>
                                     </div>

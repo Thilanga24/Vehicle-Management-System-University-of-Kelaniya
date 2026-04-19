@@ -98,7 +98,7 @@ const VehicleManagement = () => {
     // Fetch drivers for dropdown
     const fetchDrivers = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/drivers');
+            const response = await fetch('/api/drivers');
             const data = await response.json();
             if (response.ok) {
                 setDriversList(data);
@@ -111,7 +111,7 @@ const VehicleManagement = () => {
     // Fetch maintenance records
     const fetchMaintenance = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/maintenance');
+            const response = await fetch('/api/maintenance');
             const data = await response.json();
             if (response.ok) {
                 setMaintenanceRecords(data);
@@ -124,7 +124,7 @@ const VehicleManagement = () => {
     // Fetch vehicles from backend
     const fetchVehicles = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/vehicles');
+            const response = await fetch('/api/vehicles');
             const data = await response.json();
             if (response.ok) {
                 const mappedVehicles = data.map(v => ({
@@ -159,7 +159,7 @@ const VehicleManagement = () => {
 
     const fetchInsurance = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/insurance');
+            const response = await fetch('/api/insurance');
             const data = await response.json();
             if (response.ok) setInsuranceRecords(data);
         } catch (error) {
@@ -169,7 +169,7 @@ const VehicleManagement = () => {
 
     const fetchReservationsTrend = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/reservations');
+            const response = await fetch('/api/reservations');
             const data = await response.json();
             if (response.ok) {
                 setReservations(data);
@@ -213,7 +213,7 @@ const VehicleManagement = () => {
     const handleInsuranceSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:5000/api/insurance', {
+            const response = await fetch('/api/insurance', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(insuranceFormData)
@@ -241,7 +241,7 @@ const VehicleManagement = () => {
 
     const fetchFuelRecords = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/fuel');
+            const response = await fetch('/api/fuel');
             const data = await response.json();
             if (response.ok) setFuelList(data);
         } catch (error) {
@@ -252,7 +252,7 @@ const VehicleManagement = () => {
     const fetchFuelReport = async () => {
         try {
             const query = new URLSearchParams(reportFilter).toString();
-            const response = await fetch(`http://localhost:5000/api/fuel/report?${query}`);
+            const response = await fetch(`/api/fuel/report?${query}`);
             const data = await response.json();
             if (response.ok) setFuelReport(data);
         } catch (error) {
@@ -272,7 +272,7 @@ const VehicleManagement = () => {
     const handleFuelSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:5000/api/fuel', {
+            const response = await fetch('/api/fuel', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(fuelFormData)
@@ -362,8 +362,8 @@ const VehicleManagement = () => {
     const handleAddVehicle = async (e) => {
         e.preventDefault();
         const url = editingId
-            ? `http://localhost:5000/api/vehicles/${editingId}`
-            : 'http://localhost:5000/api/vehicles';
+            ? `/api/vehicles/${editingId}`
+            : '/api/vehicles';
 
         const method = editingId ? 'PUT' : 'POST';
 

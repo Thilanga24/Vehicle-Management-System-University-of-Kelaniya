@@ -11,7 +11,7 @@ const UserManagement = () => {
     // Fetch users from backend
     const fetchUsers = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/auth/users');
+            const response = await fetch('/api/auth/users');
             const data = await response.json();
             if (response.ok) {
                 setUsers(data);

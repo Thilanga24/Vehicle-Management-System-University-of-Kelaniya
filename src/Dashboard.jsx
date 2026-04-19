@@ -56,7 +56,7 @@ const Dashboard = () => {
     const fetchReservations = async () => {
         try {
             const token = sessionStorage.getItem('authToken');
-            const response = await fetch('http://localhost:5000/api/reservations', {
+            const response = await fetch('/api/reservations', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -74,7 +74,7 @@ const Dashboard = () => {
         try {
             const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
             if (!user.id) return;
-            const response = await fetch(`http://localhost:5000/api/notifications/${user.id}`);
+            const response = await fetch(`/api/notifications/${user.id}`);
             if (response.ok) {
                 const data = await response.json();
                 setNotifications(data);
@@ -86,7 +86,7 @@ const Dashboard = () => {
 
     const markNotificationAsRead = async (id) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+            const response = await fetch(`/api/notifications/${id}/read`, {
                 method: 'PUT'
             });
             if (response.ok) {
@@ -101,7 +101,7 @@ const Dashboard = () => {
         try {
             const unread = notifications.filter(n => !n.is_read);
             for (const n of unread) {
-                await fetch(`http://localhost:5000/api/notifications/${n.notification_id}/read`, {
+                await fetch(`/api/notifications/${n.notification_id}/read`, {
                     method: 'PUT'
                 });
             }
@@ -191,7 +191,7 @@ const Dashboard = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/reservations', {
+            const response = await fetch('/api/reservations', {
                 method: 'POST',
                 body: payload
             });
@@ -240,7 +240,7 @@ const Dashboard = () => {
 
         try {
             const token = sessionStorage.getItem('authToken');
-            const response = await fetch(`http://localhost:5000/api/reservations/${cancelRequestId}`, {
+            const response = await fetch(`/api/reservations/${cancelRequestId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

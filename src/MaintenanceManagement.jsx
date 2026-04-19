@@ -85,17 +85,17 @@ const MaintenanceManagement = () => {
             setIsLoading(true);
             try {
                 // Fetch Stats
-                const statsRes = await fetch('http://localhost:5000/api/maintenance/stats');
+                const statsRes = await fetch('/api/maintenance/stats');
                 const statsData = await statsRes.json();
                 if (statsRes.ok) setStats(statsData);
 
                 // Fetch All Records
-                const recordsRes = await fetch('http://localhost:5000/api/maintenance');
+                const recordsRes = await fetch('/api/maintenance');
                 const recordsData = await recordsRes.json();
                 if (recordsRes.ok) setRecords(recordsData);
 
                 // Fetch Vehicles for the form
-                const vehiclesRes = await fetch('http://localhost:5000/api/vehicles');
+                const vehiclesRes = await fetch('/api/vehicles');
                 const vehiclesData = await vehiclesRes.json();
                 if (vehiclesRes.ok) setVehicles(vehiclesData);
 
@@ -401,7 +401,7 @@ const MaintenanceManagement = () => {
         setFormStatus({ loading: true, error: null, success: false });
 
         try {
-            const response = await fetch('http://localhost:5000/api/maintenance', {
+            const response = await fetch('/api/maintenance', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -443,7 +443,7 @@ const MaintenanceManagement = () => {
         setFormStatus({ loading: true, error: null, success: false });
 
         try {
-            const response = await fetch(`http://localhost:5000/api/maintenance/${completionData.recordId}`, {
+            const response = await fetch(`/api/maintenance/${completionData.recordId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

@@ -74,7 +74,7 @@ const AdminDashboard = () => {
         const fetchDashboardData = async () => {
             try {
                 // ... (previous fetch logic remains, but I'll update the whole effect to include notifications)
-                const vRes = await fetch('http://localhost:5000/api/vehicles');
+                const vRes = await fetch('/api/vehicles');
                 const vData = await vRes.json();
                 if (vRes.ok) {
                     setVehicles(vData);
@@ -86,14 +86,14 @@ const AdminDashboard = () => {
                     }));
                 }
 
-                const dRes = await fetch('http://localhost:5000/api/drivers');
+                const dRes = await fetch('/api/drivers');
                 const dData = await dRes.json();
                 if (dRes.ok) {
                     setStats(prev => ({ ...prev, totalDrivers: dData.length }));
                 }
 
                 // Fetch Recent Activities (Reservations)
-                const aRes = await fetch('http://localhost:5000/api/reservations');
+                const aRes = await fetch('/api/reservations');
                 const aData = await aRes.json();
                 if (aRes.ok) {
                     setAllReservations(aData);
@@ -106,17 +106,17 @@ const AdminDashboard = () => {
                 }
 
                 // Fetch System Stats & Logs
-                const sStatsRes = await fetch('http://localhost:5000/api/system/stats');
+                const sStatsRes = await fetch('/api/system/stats');
                 const sStatsData = await sStatsRes.json();
                 if (sStatsRes.ok) setSystemHealth(sStatsData);
 
-                const sLogsRes = await fetch('http://localhost:5000/api/system/logs');
+                const sLogsRes = await fetch('/api/system/logs');
                 const sLogsData = await sLogsRes.json();
                 if (sLogsRes.ok) setSystemLogs(sLogsData);
 
                 // Fetch Notifications
                 if (user?.id) {
-                    const nRes = await fetch(`http://localhost:5000/api/notifications/${user.id}`);
+                    const nRes = await fetch(`/api/notifications/${user.id}`);
                     const nData = await nRes.json();
                     if (nRes.ok) {
                         setNotifications(nData);
@@ -135,7 +135,7 @@ const AdminDashboard = () => {
     const handleSystemAction = async (action) => {
         try {
             const endpoint = action === 'backup' ? 'backup' : 'optimize';
-            const res = await fetch(`http://localhost:5000/api/system/${endpoint}`, { method: 'POST' });
+            const res = await fetch(`/api/system/${endpoint}`, { method: 'POST' });
             const data = await res.json();
             if (res.ok) {
                 showToast(data.message, 'success');

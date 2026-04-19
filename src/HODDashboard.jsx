@@ -149,7 +149,7 @@ const HODDashboard = () => {
     const fetchNotifications = async () => {
         try {
             if (!user?.id) return;
-            const response = await fetch(`http://localhost:5000/api/notifications/${user.id}`);
+            const response = await fetch(`/api/notifications/${user.id}`);
             if (response.ok) {
                 const data = await response.json();
                 setNotifications(data);
@@ -161,7 +161,7 @@ const HODDashboard = () => {
 
     const markNotificationAsRead = async (id) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+            const response = await fetch(`/api/notifications/${id}/read`, {
                 method: 'PUT'
             });
             if (response.ok) {
@@ -176,7 +176,7 @@ const HODDashboard = () => {
         try {
             const unread = notifications.filter(n => !n.is_read);
             for (const n of unread) {
-                await fetch(`http://localhost:5000/api/notifications/${n.notification_id}/read`, {
+                await fetch(`/api/notifications/${n.notification_id}/read`, {
                     method: 'PUT'
                 });
             }
@@ -191,7 +191,7 @@ const HODDashboard = () => {
         try {
             setLoading(true);
             const token = sessionStorage.getItem('authToken');
-            const response = await fetch('http://localhost:5000/api/reservations', {
+            const response = await fetch('/api/reservations', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -208,7 +208,7 @@ const HODDashboard = () => {
     const fetchUsers = async () => {
         try {
             const token = sessionStorage.getItem('authToken');
-            const response = await fetch('http://localhost:5000/api/auth/users', {
+            const response = await fetch('/api/auth/users', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -223,7 +223,7 @@ const HODDashboard = () => {
     const fetchVehicles = async () => {
         try {
             const token = sessionStorage.getItem('authToken');
-            const response = await fetch('http://localhost:5000/api/vehicles', {
+            const response = await fetch('/api/vehicles', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -442,7 +442,7 @@ const HODDashboard = () => {
         if (!currentRequest) return;
 
         try {
-            const response = await fetch(`http://localhost:5000/api/reservations/${currentRequest.id}`, {
+            const response = await fetch(`/api/reservations/${currentRequest.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -492,7 +492,7 @@ const HODDashboard = () => {
         }
 
         try {
-            const response = await fetch(`http://localhost:5000/api/reservations/${pendingAction.id}`, {
+            const response = await fetch(`/api/reservations/${pendingAction.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -530,7 +530,7 @@ const HODDashboard = () => {
 
         try {
             const token = sessionStorage.getItem('authToken');
-            const response = await fetch(`http://localhost:5000/api/reservations/${cancelRequestId}`, {
+            const response = await fetch(`/api/reservations/${cancelRequestId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1120,7 +1120,7 @@ const HODDashboard = () => {
                                             {vehicles.slice(0, 4).map(v => (
                                                 <div key={v.vehicle_id} className="flex items-center gap-4 group">
                                                     <div className="w-12 h-12 bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center border border-slate-100">
-                                                        {v.image_url ? <img src={`http://localhost:5000${v.image_url}`} alt="" className="object-cover w-full h-full" /> : <i className="fas fa-car text-slate-300"></i>}
+                                                        {v.image_url ? <img src={`${v.image_url}`} alt="" className="object-cover w-full h-full" /> : <i className="fas fa-car text-slate-300"></i>}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <p className="font-bold text-slate-800 truncate text-sm">{v.make} {v.model}</p>

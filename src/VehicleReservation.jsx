@@ -45,7 +45,7 @@ const VehicleReservation = () => {
             const headers = { 'Authorization': `Bearer ${token}` };
 
             // Fetch Vehicles
-            const vResponse = await fetch('http://localhost:5000/api/vehicles', { headers });
+            const vResponse = await fetch('/api/vehicles', { headers });
             const vData = await vResponse.json();
             if (vResponse.ok) {
                 const mappedVehicles = vData.map(v => ({
@@ -62,7 +62,7 @@ const VehicleReservation = () => {
             }
 
             // Fetch Reservations for availability check
-            const rResponse = await fetch('http://localhost:5000/api/reservations', { headers });
+            const rResponse = await fetch('/api/reservations', { headers });
             const rData = await rResponse.json();
             if (rResponse.ok) {
                 setAllReservations(rData);
@@ -183,7 +183,7 @@ const VehicleReservation = () => {
 
         try {
             const token = sessionStorage.getItem('authToken');
-            const response = await fetch('http://localhost:5000/api/reservations', {
+            const response = await fetch('/api/reservations', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: payload

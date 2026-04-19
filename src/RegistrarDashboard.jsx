@@ -59,7 +59,7 @@ const RegistrarDashboard = () => {
     const fetchReservations = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://localhost:5000/api/reservations');
+            const response = await fetch('/api/reservations');
             if (response.ok) {
                 const data = await response.json();
                 setReservations(data);
@@ -127,7 +127,7 @@ const RegistrarDashboard = () => {
     const handleAction = async (action) => {
         try {
             const status = action === 'approve' ? 'approved' : 'rejected';
-            const response = await fetch(`http://localhost:5000/api/reservations/registrar/${modal.data.id}`, {
+            const response = await fetch(`/api/reservations/registrar/${modal.data.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -781,7 +781,7 @@ const RegistrarDashboard = () => {
                                         {modal.data.attachment_url && (
                                             <div className="col-span-2 mt-2">
                                                 <p className="text-xs font-bold text-slate-400 uppercase mb-1">Attachment</p>
-                                                <a href={`http://localhost:5000${modal.data.attachment_url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-2 text-sm">
+                                                <a href={`${modal.data.attachment_url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline flex items-center gap-2 text-sm">
                                                     <i className="fas fa-paperclip"></i> View Attached Document
                                                 </a>
                                             </div>

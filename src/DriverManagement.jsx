@@ -53,7 +53,7 @@ const DriverManagement = () => {
 
     const fetchAssignments = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/reservations');
+            const response = await fetch('/api/reservations');
             const data = await response.json();
             if (response.ok) {
                 // Approved reservations are considered active assignments
@@ -127,7 +127,7 @@ const DriverManagement = () => {
     // Fetch drivers
     const fetchDrivers = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/drivers');
+            const response = await fetch('/api/drivers');
             const data = await response.json();
             console.log('Fetched Drivers:', data);
             if (response.ok) {
@@ -158,7 +158,7 @@ const DriverManagement = () => {
 
     const fetchPerformance = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/drivers/performance');
+            const response = await fetch('/api/drivers/performance');
             const data = await response.json();
             if (response.ok) setPerformanceData(data);
         } catch (error) {
@@ -200,8 +200,8 @@ const DriverManagement = () => {
     const handleAddDriver = async (e) => {
         e.preventDefault();
         const url = editingId
-            ? `http://localhost:5000/api/drivers/${editingId}`
-            : 'http://localhost:5000/api/drivers';
+            ? `/api/drivers/${editingId}`
+            : '/api/drivers';
         const method = editingId ? 'PUT' : 'POST';
 
         try {

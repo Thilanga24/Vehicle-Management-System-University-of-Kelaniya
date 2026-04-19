@@ -53,7 +53,7 @@ const ReportsAnalytics = () => {
 
     const fetchVehicles = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/vehicles');
+            const response = await fetch('/api/vehicles');
             if (response.ok) {
                 const data = await response.json();
                 setVehicles(data);
@@ -65,7 +65,7 @@ const ReportsAnalytics = () => {
 
     const fetchMaintenanceDailyCosts = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/maintenance/daily-costs');
+            const response = await fetch('/api/maintenance/daily-costs');
             if (response.ok) {
                 const data = await response.json();
                 setMaintenanceDailyCosts(data);
@@ -78,7 +78,7 @@ const ReportsAnalytics = () => {
     const fetchFuelReport = async () => {
         try {
             const { vehicleId, startDate, endDate } = fuelFilters;
-            const response = await fetch(`http://localhost:5000/api/fuel/report?vehicle_id=${vehicleId}&startDate=${startDate}&endDate=${endDate}`);
+            const response = await fetch(`/api/fuel/report?vehicle_id=${vehicleId}&startDate=${startDate}&endDate=${endDate}`);
             if (response.ok) {
                 const data = await response.json();
                 setFuelReport(data);
@@ -91,7 +91,7 @@ const ReportsAnalytics = () => {
     const fetchMaintenanceReport = async () => {
         try {
             const { vehicleId, startDate, endDate } = maintenanceFilters;
-            const response = await fetch(`http://localhost:5000/api/maintenance/report?vehicle_id=${vehicleId}&startDate=${startDate}&endDate=${endDate}`);
+            const response = await fetch(`/api/maintenance/report?vehicle_id=${vehicleId}&startDate=${startDate}&endDate=${endDate}`);
             if (response.ok) {
                 const data = await response.json();
                 setMaintenanceReport(data);
@@ -105,7 +105,7 @@ const ReportsAnalytics = () => {
         try {
             const { vehicleId, startDate, endDate } = fuelFilters;
             const query = `vehicle_id=${vehicleId}&startDate=${startDate}&endDate=${endDate}`;
-            const response = await fetch(`http://localhost:5000/api/fuel?${query}`);
+            const response = await fetch(`/api/fuel?${query}`);
 
             if (!response.ok) throw new Error('Failed to fetch records');
             const fuelList = await response.json();
@@ -175,7 +175,7 @@ const ReportsAnalytics = () => {
     const handleDownloadMaintenancePDF = async () => {
         try {
             const { vehicleId, startDate, endDate } = maintenanceFilters;
-            const response = await fetch(`http://localhost:5000/api/maintenance`);
+            const response = await fetch(`/api/maintenance`);
             if (!response.ok) throw new Error('Failed to fetch records');
             let allRecords = await response.json();
             const filteredRecords = allRecords.filter(rec => {
@@ -330,10 +330,10 @@ const ReportsAnalytics = () => {
         try {
             setLoading(true);
             const [resVehicles, resReservations, resMaint, resFuel] = await Promise.all([
-                fetch('http://localhost:5000/api/vehicles').then(r => r.json()),
-                fetch('http://localhost:5000/api/reservations').then(r => r.json()),
-                fetch(`http://localhost:5000/api/maintenance/report?vehicle_id=all&startDate=${new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]}&endDate=${new Date().toISOString().split('T')[0]}`).then(r => r.json()),
-                fetch(`http://localhost:5000/api/fuel/report?vehicle_id=all&startDate=${new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]}&endDate=${new Date().toISOString().split('T')[0]}`).then(r => r.json())
+                fetch('/api/vehicles').then(r => r.json()),
+                fetch('/api/reservations').then(r => r.json()),
+                fetch(`/api/maintenance/report?vehicle_id=all&startDate=${new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]}&endDate=${new Date().toISOString().split('T')[0]}`).then(r => r.json()),
+                fetch(`/api/fuel/report?vehicle_id=all&startDate=${new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]}&endDate=${new Date().toISOString().split('T')[0]}`).then(r => r.json())
             ]);
 
             setVehicles(resVehicles);

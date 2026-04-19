@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # Database Service
+  db:
+    image: mysql:8.0
+    container_name: vms-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-2410}
+      MYSQL_DATABASE: ${DB_NAME:-uok_vehicle_management}
+    volumes:
+      - db_data:/var/lib/mysql
+      # Uncomment the next line if you want to initialize the DB with a script
+      # - ./backend/setup_database.sql:/docker-entrypoint-initdb.d/setup_database.sql
+    ports:
+      - "3306:3306"
+
+  # Backend Service
+  backend:
+    build: ./backend
+    container_name: vms-backend
+    restart: always
+    environment:
+      - PORT=5000
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=${DB_PASSWORD:-2410}
+      - DB_NAME=${DB_NAME:-uok_vehicle_management}
+      - JWT_SECRET=${JWT_SECRET:-your_secret_here}
+    depends_on:
+      - db
+    ports:
+      - "5000:5000"
+
+  # Frontend Service
+  frontend:
+    build: .
+    container_name: vms-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
